@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import asyncio
+import signal
 
 import structlog
 from libmozdata.lando import LandoWarnings
@@ -326,6 +327,9 @@ class Events(object):
     """
 
     def __init__(self, cache_root):
+        self.consumers = []
+        signal.signal(signal.SIGTERM, self.handle_sigterm)
+
         # Create message bus shared amongst processes
         self.bus = MessageBus()
 
@@ -478,12 +482,30 @@ class Events(object):
             self.bugbug_utils = None
             logger.info("Skipping workers consumers")
 
+    def handle_sigterm(self):
+        """
+        Heroku kills dynos at least once a day.
+        Whenever it might happen, we should catch the SIGTERM signal to
+        put remaining jobs back back in the queue and exit gracefully
+        """
+        for task in self.consummers:
+            # Stop currently running tasks
+            task.cancel()
+            # TODO: Arbitrary stopping a task may trigger unexpected effects
+
+            # TODO: Find the task that triggered a build
+            if not task.queue == QUEUE_WEB_BUILDS:
+                continue
+
+            (build,) = *task.args
+            # Put the base build task back in Redis, so events will be handled on restart
+            self.bus.send(QUEUE_WEB_BUILDS, build)
+
     def run(self):
-        consumers = []
 
         # Code review main workflow
         if self.workflow:
-            consumers += [
+            self.consumers += [
                 # Process Phabricator build received from webserver
                 self.bus.run(
                     self.workflow.process_build, QUEUE_WEB_BUILDS, sequential=False
@@ -508,7 +530,7 @@ class Events(object):
             ]
 
         if self.bugbug_utils:
-            consumers += [
+            self.consumers += [
                 self.bus.run(
                     self.bugbug_utils.process_build, QUEUE_BUGBUG, sequential=False
                 ),
@@ -531,31 +553,31 @@ class Events(object):
 
         # Add mercurial task
         if self.mercurial:
-            consumers.append(self.mercurial.run())
+            self.consumers.append(self.mercurial.run())
 
         # Add monitoring task
         if self.monitoring:
-            consumers.append(self.monitoring.run())
+            self.consumers.append(self.monitoring.run())
 
         # Add community monitoring task
         if self.community_monitoring:
-            consumers.append(self.community_monitoring.run())
+            self.consumers.append(self.community_monitoring.run())
 
         # Add pulse listener for task results.
         if self.pulse:
-            consumers.append(self.pulse.run())
+            self.consumers.append(self.pulse.run())
 
         # Add communitytc pulse listener for test selection results.
         if self.community_pulse:
-            consumers.append(self.community_pulse.run())
+            self.consumers.append(self.community_pulse.run())
 
         # Start the web server in its own process
         if self.webserver:
             self.webserver.start()
 
-        if consumers:
+        if self.consumers:
             # Run all tasks concurrently
-            run_tasks(consumers)
+            run_tasks(self.consumers)
         else:
             # Keep the web server process running
             asyncio.get_event_loop().run_forever()
