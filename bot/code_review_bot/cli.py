@@ -160,6 +160,7 @@ def main():
     settings.load_user_blacklist(taskcluster.secrets["user_blacklist"], phabricator_api)
 
     # Load unique revision
+    settings.phabricator_build_target = "PHID-HMBT-5h2izgt6hf2anwvutod2"
     try:
         if settings.generic_group_id:
             revision = Revision.from_decision_task(

@@ -116,7 +116,7 @@ class Repository:
     """
 
     def __init__(self, config, cache_root):
-        assert isinstance(config, dict)
+        cache_root = "/tmp/moz_cache"
         self.name = config["name"]
         self.url = config["url"]
         self.dir = os.path.join(cache_root, config["name"])
@@ -138,18 +138,18 @@ class Repository:
 
         # Write ssh key from secret
         _, self.ssh_key_path = tempfile.mkstemp(suffix=".key")
-        with open(self.ssh_key_path, "w") as f:
-            f.write(config["ssh_key"])
+        # with open(self.ssh_key_path, "w") as f:
+        #    f.write(config["ssh_key"])
 
-        # Build ssh conf
-        conf = {
-            "StrictHostKeyChecking": "no",
-            "User": config["ssh_user"],
-            "IdentityFile": self.ssh_key_path,
-        }
-        self.ssh_conf = "ssh {}".format(
-            " ".join(f'-o {k}="{v}"' for k, v in conf.items())
-        ).encode("utf-8")
+        ## Build ssh conf
+        # conf = {
+        #    "StrictHostKeyChecking": "no",
+        #    "User": config["ssh_user"],
+        #    "IdentityFile": self.ssh_key_path,
+        # }
+        # self.ssh_conf = "ssh {}".format(
+        #    " ".join(f'-o {k}="{v}"' for k, v in conf.items())
+        # ).encode("utf-8")
 
         # Remove key when finished
         atexit.register(self.end_of_life)
@@ -190,12 +190,14 @@ class Repository:
         """
         Check if a revision is available on this Mercurial repo
         """
+        # Hash is 12 chars instead of 40
         if not revision:
             return False
         try:
             self.repo.identify(revision)
             return True
         except hglib.error.CommandError:
+            # TODO: Convert & retry
             return False
 
     def get_base_identifier(self, needed_stack: list[PhabricatorPatch]) -> str:
@@ -205,6 +207,7 @@ class Repository:
             return "tip"
 
         # Otherwise use the base/parent revision of first revision in the stack.
+        raise Exception(needed_stack[0].base_revision)
         return needed_stack[0].base_revision
 
     def apply_build(self, build):
@@ -226,9 +229,9 @@ class Repository:
                 logger.info(f"Stopping at revision {patch.base_revision}")
                 break
 
-        if not needed_stack:
-            logger.info("All the patches are already applied")
-            return
+        # if not needed_stack:
+        #    logger.info("All the patches are already applied")
+        #    return
 
         hg_base = self.get_base_identifier(needed_stack)
 
@@ -548,13 +551,13 @@ class MercurialWorker:
                 {"message": error_log, "duration": time.time() - start},
             )
 
-        except Exception as e:
-            logger.warn("Failed to process diff", error=e, build=build)
-            return (
-                "fail:general",
-                build,
-                {"message": str(e), "duration": time.time() - start},
-            )
+        # except Exception as e:
+        #    logger.warn("Failed to process diff", error=e, build=build)
+        #    return (
+        #        "fail:general",
+        #        build,
+        #        {"message": str(e), "duration": time.time() - start},
+        #    )
 
         return (
             "success",

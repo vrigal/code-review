@@ -249,12 +249,12 @@ class Workflow:
             return
 
         # Cannot run without mercurial cache configured
-        if not settings.mercurial_cache:
-            raise Exception("Mercurial cache must be configured to start analysis")
+        # if not settings.mercurial_cache:
+        #    raise Exception("Mercurial cache must be configured to start analysis")
 
-        # Cannot run without ssh key
-        if not settings.ssh_key:
-            raise Exception("SSH Key must be configured to start analysis")
+        ## Cannot run without ssh key
+        # if not settings.ssh_key:
+        #    raise Exception("SSH Key must be configured to start analysis")
 
         # Set the Phabricator build as running
         self.update_status(revision, state=BuildState.Work)
@@ -283,8 +283,6 @@ class Workflow:
                 "url": revision.base_repository_conf.url,
                 "try_url": revision.base_repository_conf.try_url,
                 # Setup ssh identity
-                "ssh_user": revision.base_repository_conf.ssh_user,
-                "ssh_key": settings.ssh_key,
                 # Force usage of robustcheckout
                 "checkout": "robust",
             },
@@ -299,6 +297,7 @@ class Workflow:
             # Continue with workflow once the build is public
             if build.state is PhabricatorBuildState.Public:
                 break
+            break
 
             # Retry later if the build is not yet seen as public
             logger.warning(
@@ -309,8 +308,8 @@ class Workflow:
             time.sleep(30)
 
         # Make sure the build is now public
-        if build.state is not PhabricatorBuildState.Public:
-            raise Exception("Cannot process private builds")
+        # if build.state is not PhabricatorBuildState.Public:
+        #    raise Exception("Cannot process private builds")
 
         # When the build is public, load needed details
         try:
@@ -326,7 +325,7 @@ class Workflow:
             raise Exception("No stack of patches to apply.")
 
         # We'll clone the required repository
-        repository.clone()
+        # repository.clone()
 
         # Apply the stack of patches and push to try
         worker = MercurialWorker()
@@ -414,12 +413,12 @@ class Workflow:
         )
 
         # Publish final HarborMaster state
-        self.update_status(
-            revision,
-            BuildState.Fail
-            if nb_publishable_errors > 0 or task_failures
-            else BuildState.Pass,
-        )
+        ##self.update_status(
+        ##    revision,
+        ##    BuildState.Fail
+        ##    if nb_publishable_errors > 0 or task_failures
+        ##    else BuildState.Pass,
+        ##)
 
     def index(self, revision, **kwargs):
         """
@@ -674,8 +673,8 @@ class Workflow:
             )
             return
 
-        self.phabricator.update_build_target(revision.build_target_phid, state)
-        logger.info("Updated HarborMaster status", state=state, revision=revision)
+        ##self.phabricator.update_build_target(revision.build_target_phid, state)
+        ##logger.info("Updated HarborMaster status", state=state, revision=revision)
 
     def publish_link(self, revision: Revision, slug: str, name: str, url: str):
         """
@@ -697,6 +696,6 @@ class Workflow:
             )
             return
 
-        self.phabricator.create_harbormaster_uri(
-            revision.build_target_phid, slug, name, url
-        )
+        ##self.phabricator.create_harbormaster_uri(
+        ##    revision.build_target_phid, slug, name, url
+        ##)
