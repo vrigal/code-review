@@ -63,6 +63,11 @@ class GithubClient:
         """
         Publish a review from a list of publishable issues, requesting changes to the author.
         """
+
+        # Only process github revisions
+        if not isinstance(revision, GithubRevision):
+            return
+
         repo = self.api.get_repo(revision.repo_name)
         pull_request = repo.get_pull(revision.pull_number)
 

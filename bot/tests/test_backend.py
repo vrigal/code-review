@@ -37,6 +37,7 @@ def test_publication(mock_clang_tidy_issues, mock_revision, mock_backend, mock_h
     assert revisions[1] == {
         "bugzilla_id": 1234567,
         "id": 1,
+        "provider": "phabricator",
         "provider_id": 51,
         "title": "Static Analysis tests",
         "diffs_url": "http://code-review-backend.test/v1/revision/1/diffs/",
@@ -131,6 +132,7 @@ def test_missing_bugzilla_id(mock_revision, mock_backend, mock_hgmo):
     assert revisions[1] == {
         "id": 1,
         "bugzilla_id": None,
+        "provider": "phabricator",
         "provider_id": 51,
         "title": "Static Analysis tests",
         "diffs_url": "http://code-review-backend.test/v1/revision/1/diffs/",

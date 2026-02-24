@@ -66,6 +66,7 @@ class BackendAPI:
 
         # Create revision on backend if it does not exists
         data = {
+            "provider": "phabricator",
             "provider_id": revision.phabricator_id,
             "title": revision.title,
             "bugzilla_id": revision.bugzilla_id,
