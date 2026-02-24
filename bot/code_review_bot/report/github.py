@@ -14,11 +14,15 @@ class GithubReporter(Reporter):
     # Auth to Github using a configuration (from Taskcluster secret)
 
     def __init__(self, configuration={}, *args, **kwargs):
+        for key in ("client_id", "private_key_pem", "installation_id"):
+            if not configuration.get(key):
+                raise Exception(f"Missing github reporter configuration key {key}")
+
         # Setup github App secret from the configuration
         self.github_client = GithubClient(
-            client_id=configuration.get("app_client_id"),
-            pem_key_path=configuration.get("app_pem_file"),
-            installation_id=configuration.get("app_installation_id"),
+            client_id=configuration["client_id"],
+            private_key=configuration["private_key_pem"],
+            installation_id=configuration["installation_id"],
         )
 
         self.analyzers_skipped = configuration.get("analyzers_skipped", [])

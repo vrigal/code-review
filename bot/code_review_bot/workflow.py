@@ -675,10 +675,8 @@ class Workflow:
         """
         assert isinstance(state, BuildState)
 
+        # Skip github status update, as we rely on the github reporter for publication
         if isinstance(revision, GithubRevision):
-            logger.warning(
-                "No github status update yet", revision=revision, status=state
-            )
             return
 
         if not revision.build_target_phid:

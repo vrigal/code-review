@@ -26,10 +26,8 @@ class ReviewEvent(enum.Enum):
 
 
 class GithubClient:
-    def __init__(self, client_id: str, pem_key_path: str, installation_id: str):
+    def __init__(self, client_id: str, private_key: str, installation_id: str):
         self.client_id = client_id
-        with open(pem_key_path) as f:
-            private_key = f.read()
 
         # Setup auth
         self.auth = Auth.AppAuth(self.client_id, private_key)
@@ -37,7 +35,7 @@ class GithubClient:
 
         installations = self.github_integration.get_installations()
         self.installation = next(
-            (i for i in installations if str(i.id) == installation_id), None
+            (i for i in installations if i.id == installation_id), None
         )
         if not self.installation:
             raise ValueError(

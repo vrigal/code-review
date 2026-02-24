@@ -42,9 +42,9 @@ def test_github_review(
 
     reporter = GithubReporter(
         {
-            "app_client_id": "app_client_id",
-            "app_pem_file": Path(FIXTURES_DIR) / "private_key.pem",
-            "app_installation_id": "123456789",
+            "client_id": "client_id",
+            "private_key_pem": (Path(FIXTURES_DIR) / "private_key.pem").read_text(),
+            "installation_id": 123456789,
         }
     )
 
@@ -127,9 +127,9 @@ def test_github_review_approve(
     revision.id = 52
     reporter = GithubReporter(
         {
-            "app_client_id": "app_client_id",
-            "app_pem_file": Path(FIXTURES_DIR) / "private_key.pem",
-            "app_installation_id": "123456789",
+            "client_id": "client_id",
+            "private_key_pem": (Path(FIXTURES_DIR) / "private_key.pem").read_text(),
+            "installation_id": 123456789,
         }
     )
 
