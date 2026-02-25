@@ -59,3 +59,25 @@ class GithubRevision(Revision):
             "pull_number": self.pull_number,
             "pull_head_sha": self.pull_head_sha,
         }
+
+    def serialize(self):
+        """
+        Outputs a tuple of dicts for revision and diff sent to backend
+        """
+        revision = {
+            "provider": "github",
+            "provider_id": self.phabricator_id,
+            "title": self.title,
+            "bugzilla_id": self.bugzilla_id,
+            "base_repository": self.base_repository,
+            "head_repository": self.head_repository,
+            "base_changeset": self.base_changeset,
+            "head_changeset": self.head_changeset,
+        }
+        diff = {
+            "id": self.diff_id,
+            "provider_id": self.diff_phid,
+            "mercurial_hash": self.head_changeset,
+            "repository": self.head_repository,
+        }
+        return revision, diff

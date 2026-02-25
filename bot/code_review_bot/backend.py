@@ -64,17 +64,8 @@ class BackendAPI:
         ):
             assert isinstance(changeset, str), "Mercurial changeset must be a string"
 
-        # Create revision on backend if it does not exists
-        data = {
-            "provider": "phabricator",
-            "provider_id": revision.phabricator_id,
-            "title": revision.title,
-            "bugzilla_id": revision.bugzilla_id,
-            "base_repository": revision.base_repository,
-            "head_repository": revision.head_repository,
-            "base_changeset": revision.base_changeset,
-            "head_changeset": revision.head_changeset,
-        }
+        # Create revision on backend if it does not exists using dedicated logic for serialization
+        revision_data, diff_data = revision.serialize()
 
         # Try to create the revision, or retrieve it in case it exists with that Phabricator ID.
         # The backend always returns a revisions, either a new one, or a pre-existing one
@@ -82,7 +73,7 @@ class BackendAPI:
         auth = (self.username, self.password)
         url_post = urllib.parse.urljoin(self.url, revision_url)
         response = requests.post(
-            url_post, headers=GetAppUserAgent(), json=data, auth=auth
+            url_post, headers=GetAppUserAgent(), json=revision_data, auth=auth
         )
         if not response.ok:
             logger.warn(f"Backend rejected the payload: {response.content}")
@@ -98,11 +89,8 @@ class BackendAPI:
 
         # Create diff attached to revision on backend
         data = {
-            "id": revision.diff_id,
-            "provider_id": revision.diff_phid,
+            **diff_data,
             "review_task_id": settings.taskcluster.task_id,
-            "mercurial_hash": revision.head_changeset,
-            "repository": revision.head_repository,
         }
         backend_diff = self.create(backend_revision["diffs_url"], data)
 

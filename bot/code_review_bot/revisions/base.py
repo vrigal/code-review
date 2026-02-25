@@ -237,6 +237,12 @@ class Revision(ABC):
         """
         raise NotImplementedError
 
+    def serialize(self):
+        """
+        Outputs a tuple of dicts for revision and diff sent to backend
+        """
+        raise NotImplementedError
+
     @staticmethod
     def from_try_task(try_task: dict, decision_task: dict, phabricator: PhabricatorAPI):
         """
