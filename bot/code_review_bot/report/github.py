@@ -55,7 +55,7 @@ class GithubReporter(Reporter):
             event = ReviewEvent.Approved
 
         self.github_client.publish_review(
-            issues=issues,
+            issues=publishable_issues,
             revision=revision,
             message=message,
             event=event,
