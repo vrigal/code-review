@@ -52,7 +52,7 @@ class GithubClient:
     def _build_review_comment(self, issue):
         return ReviewComment(
             path=issue.path,
-            position=issue.line,
+            line=issue.line,
             body=issue.message,
         )
 
