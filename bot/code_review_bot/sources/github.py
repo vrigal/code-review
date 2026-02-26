@@ -6,11 +6,14 @@
 
 import enum
 
+import structlog
 from github import Auth, GithubIntegration
 from github.PullRequest import ReviewComment
 
 from code_review_bot import Issue
 from code_review_bot.revisions import GithubRevision
+
+logger = structlog.get_logger(__name__)
 
 
 class ReviewEvent(enum.Enum):
@@ -64,8 +67,10 @@ class GithubClient:
         Publish a review from a list of publishable issues, requesting changes to the author.
         """
 
-        # Only process github revisions
         if not isinstance(revision, GithubRevision):
+            logger.warning(
+                f"Revision must originate from Github in order to publish a review, skipping {revision}."
+            )
             return
 
         repo = self.api.get_repo(revision.repo_name)
