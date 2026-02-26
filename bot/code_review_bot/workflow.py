@@ -361,6 +361,11 @@ class Workflow:
         Clone the repo locally when configured
         On production this should use a Taskcluster cache
         """
+        if not isinstance(revision, PhabricatorRevision):
+            logger.warning(
+                "Mercurial clone only supports Phabricator revisions, skipping."
+            )
+            return
         if not settings.mercurial_cache:
             logger.debug("Local clone not required")
             return
