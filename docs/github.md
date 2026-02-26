@@ -23,7 +23,11 @@ The code review bot YAML configuration should then be updated with the correspon
 bot:
   REPORTERS:
     - reporter: github
-      app_client_id: xxxxxxxxxxxxxxxxxxxx
-      app_pem_file: /path/to/key.pem
-      app_installation_id: 123456789
+      client_id: xxxxxxxxxxxxxxxxxxxx
+      private_key_pem: |-
+        -----BEGIN RSA PRIVATE KEY-----
+        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        -----END RSA PRIVATE KEY-----
+      installation_id: 123456789
 ```
