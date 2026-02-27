@@ -26,7 +26,7 @@ from code_review_bot import (
 )
 from code_review_bot.config import settings
 from code_review_bot.report import get_reporters
-from code_review_bot.revisions import PhabricatorRevision, Revision
+from code_review_bot.revisions import GithubRevision, PhabricatorRevision, Revision
 from code_review_bot.tools.libmozdata import setup as setup_libmozdata
 from code_review_bot.tools.log import init_logger
 from code_review_bot.workflow import Workflow
@@ -61,6 +61,13 @@ def parse_cli():
         "Reduce the time required to read updated files, i.e. to compute the unique hash of multiple issues.\n"
         "A clone is automatically performed when ingesting a revision and this option is unset, "
         "except on a developer instance (where HGMO is used).",
+        type=Path,
+        default=None,
+    )
+    parser.add_argument(
+        "--github-repository",
+        help="Optional path to a up-to-date github repository matching the analyzed revision.\n"
+        "This argument is required for Github reviusions in order to compute issues' hashes based on file content.",
         type=Path,
         default=None,
     )
@@ -116,6 +123,7 @@ def main():
         taskcluster.secrets["repositories"],
         taskcluster.secrets["ssh_key"],
         args.mercurial_repository,
+        args.github_repository,
     )
 
     # Setup statistics
@@ -204,6 +212,11 @@ def main():
                 phabricator=phabricator["url"],
             )
             return 1
+
+    if isinstance(revision, GithubRevision):
+        assert (
+            args.github_repository is not None
+        ), "Girhub revision analysis requires the --github-repository argument to be set"
 
     # Run workflow according to source
     w = Workflow(
