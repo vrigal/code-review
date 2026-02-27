@@ -97,12 +97,12 @@ def test_github_review(
             {
                 "body": "dummy message",
                 "path": "another_test.cpp",
-                "position": 42,
+                "line": 42,
             },
             {
                 "body": "This file is uncovered",
                 "path": "path/to/test.cpp",
-                "position": 1,
+                "line": 1,
             },
         ],
         "commit_id": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
