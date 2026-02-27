@@ -362,8 +362,17 @@ class PhabricatorRevision(Revision):
         )
         logger.info("Downloading HGMO file", url=url)
 
-        response = requests.get(url, headers=GetAppUserAgent())
-        response.raise_for_status()
+        try:
+            response = requests.get(url, headers=GetAppUserAgent())
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                logger.warning("Failed to download file", path=self.path)
+                # Consider as empty content if the file is not found
+                return None
+            else:
+                # When encountering another HTTP error, raise the issue
+                raise e
 
         # Store in cache
         content = response.content.decode("utf-8")

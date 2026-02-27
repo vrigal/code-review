@@ -6,6 +6,7 @@ import os
 import random
 from abc import ABC
 from datetime import timedelta
+from pathlib import Path
 
 import rs_parsepatch
 import structlog
@@ -164,6 +165,25 @@ class Revision(ABC):
         # Detect if this issue is in the patch
         lines = set(range(issue.line, issue.line + issue.nb_lines))
         return not lines.isdisjoint(modified_lines)
+
+    def get_file_content(
+        self, file_path: str, local_cache_repository: Path | None = None
+    ):
+        if local_cache_repository:
+            logger.debug("Using the local repository to build issue's hash")
+            try:
+                with (local_cache_repository / file_path).open() as f:
+                    file_content = f.read()
+            except (FileNotFoundError, IsADirectoryError):
+                logger.warning("Failed to find issue's related file", path=file_path)
+                file_content = None
+        else:
+            try:
+                file_content = self.load_file(file_path)
+            except ValueError:
+                # The path is erroneous, consider as empty content
+                file_content = None
+        return file_content
 
     @property
     def has_clang_files(self):

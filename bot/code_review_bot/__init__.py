@@ -198,34 +198,9 @@ class Issue(abc.ABC):
         #  format `obj-x86_64-pc-linux-gnu`
         file_content = None
         if "/obj-" not in self.path:
-            if settings.mercurial_cache_checkout:
-                logger.debug("Using the local repository to build issue's hash")
-                try:
-                    with (settings.mercurial_cache_checkout / self.path).open() as f:
-                        file_content = f.read()
-                except (FileNotFoundError, IsADirectoryError):
-                    logger.warning(
-                        "Failed to find issue's related file", path=self.path
-                    )
-                    file_content = None
-            else:
-                try:
-                    # Load all the lines affected by the issue
-                    file_content = self.revision.load_file(self.path)
-                except ValueError:
-                    # Build the hash with an empty content in case the path is erroneous
-                    file_content = None
-                except requests.exceptions.HTTPError as e:
-                    if e.response.status_code == 404:
-                        logger.warning(
-                            "Failed to download a file with an issue", path=self.path
-                        )
-
-                        # We still build the hash with empty content
-                        file_content = None
-                    else:
-                        # When encountering another HTTP error, raise the issue
-                        raise
+            file_content = self.revision.get_file_content(
+                self.path, settings.mercurial_cache_checkout
+            )
 
         if file_content is None:
             self._hash = None
