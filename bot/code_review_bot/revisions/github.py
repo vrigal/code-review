@@ -74,7 +74,7 @@ class GithubRevision(Revision):
             ),
             None,
         )
-        # TODO: Store pull request information at an upper level than the reporter section
+        # A github reporter configuration is required to perform a github Pull Request analysis
         assert reporter_conf, "Github reporter secrets must be set to access information about the pull request"
         client = GithubClient(
             client_id=reporter_conf["client_id"],
@@ -91,13 +91,16 @@ class GithubRevision(Revision):
             "provider": "github",
             "provider_id": self.pull_number,
             "title": self.pull_request.title,
-            "bugzilla_id": 42,
-            "base_repository": self.pull_request.base.repo.url,
+            "bugzilla_id": None,
+            "base_repository": self.pull_request.base.repo.html_url,
             "head_repository": self.repo_url,
         }
         diff = {
+            # TODO: Use a unique integer ID here or set it from the backend
+            "id": 10000001,
             "provider": "github",
             "provider_id": self.pull_head_sha,
+            "mercurial_hash": self.pull_head_sha,
             "repository": self.repo_url,
         }
         return revision, diff

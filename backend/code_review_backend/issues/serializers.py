@@ -35,7 +35,7 @@ class RepositoryGetOrCreateField(serializers.SlugRelatedField):
     )
     default_error_messages = {
         **serializers.SlugRelatedField.default_error_messages,
-        "invalid_url": "Repository URL must match hg.mozilla.org.",
+        "invalid_url": "Repository base URL is not allowed.",
     }
     queryset = Repository.objects.all()
 
