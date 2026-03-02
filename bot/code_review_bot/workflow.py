@@ -265,9 +265,11 @@ class Workflow:
             logger.warning("Blacklisted author, stopping there.")
             return
 
-        # Cannot run without mercurial cache configured
-        if not settings.mercurial_cache:
-            raise Exception("Mercurial cache must be configured to start analysis")
+        # Cannot run without either mercurial or github cache configured
+        if not settings.mercurial_cache and not settings.github_cache:
+            raise Exception(
+                "One of Mercurial cache or github cache must be configured to start analysis"
+            )
 
         # Cannot run without ssh key
         if not settings.ssh_key:
@@ -362,10 +364,11 @@ class Workflow:
         On production this should use a Taskcluster cache
         """
         if not isinstance(revision, PhabricatorRevision):
-            logger.warning(
+            logger.info(
                 "Mercurial clone only supports Phabricator revisions, skipping."
             )
             return
+
         if not settings.mercurial_cache:
             logger.debug("Local clone not required")
             return

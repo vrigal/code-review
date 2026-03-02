@@ -49,6 +49,10 @@ class GithubClient:
 
         self.review_comments = []
 
+    def get_pull_request(self, revision: GithubRevision):
+        repo = self.api.get_repo(revision.repo_name)
+        return repo.get_pull(revision.pull_number)
+
     def _build_review_comment(self, issue):
         return ReviewComment(
             path=issue.path,

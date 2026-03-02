@@ -2,11 +2,13 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
+from functools import cached_property
 from urllib.parse import urlparse
 
 import requests
 import structlog
 
+from code_review_bot import taskcluster
 from code_review_bot.revisions import Revision
 
 logger = structlog.get_logger(__name__)
@@ -60,24 +62,42 @@ class GithubRevision(Revision):
             "pull_head_sha": self.pull_head_sha,
         }
 
+    @cached_property
+    def pull_request(self):
+        from code_review_bot.sources.github import GithubClient
+
+        reporter_conf = next(
+            (
+                reporter
+                for reporter in taskcluster.secrets["REPORTERS"]
+                if reporter["reporter"] == "github"
+            ),
+            None,
+        )
+        # TODO: Store pull request information at an upper level than the reporter section
+        assert reporter_conf, "Github reporter secrets must be set to access information about the pull request"
+        client = GithubClient(
+            client_id=reporter_conf["client_id"],
+            private_key=reporter_conf["private_key_pem"],
+            installation_id=reporter_conf["installation_id"],
+        )
+        return client.get_pull_request(self)
+
     def serialize(self):
         """
-        Outputs a tuple of dicts for revision and diff sent to backend
+        Outputs a tuple of dicts for revision and diff (empty for Github) sent to backend
         """
         revision = {
             "provider": "github",
-            "provider_id": self.phabricator_id,
-            "title": self.title,
-            "bugzilla_id": self.bugzilla_id,
-            "base_repository": self.base_repository,
-            "head_repository": self.head_repository,
-            "base_changeset": self.base_changeset,
-            "head_changeset": self.head_changeset,
+            "provider_id": self.pull_number,
+            "title": self.pull_request.title,
+            "bugzilla_id": 42,
+            "base_repository": self.pull_request.base.repo.url,
+            "head_repository": self.repo_url,
         }
         diff = {
-            "id": self.diff_id,
-            "provider_id": self.diff_phid,
-            "mercurial_hash": self.head_changeset,
-            "repository": self.head_repository,
+            "provider": "github",
+            "provider_id": self.pull_head_sha,
+            "repository": self.repo_url,
         }
         return revision, diff
