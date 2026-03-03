@@ -120,8 +120,8 @@ class CreationAPITestCase(APITestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "base_repository": ["Repository URL must match hg.mozilla.org."],
-                "head_repository": ["Repository URL must match hg.mozilla.org."],
+                "base_repository": ["Repository base URL is not allowed."],
+                "head_repository": ["Repository base URL is not allowed."],
             },
         )
 
