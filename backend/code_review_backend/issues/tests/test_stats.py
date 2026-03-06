@@ -245,7 +245,6 @@ class StatsAPITestCase(APITestCase):
             diffs = issue["diffs"]
             self.assertEqual(len(diffs), 1)
             diff = diffs[0]
-            self.assertTrue(diff["id"] > 0)
             self.assertEqual(diff["repository"], "http://repo.test/myrepo-try")
 
             # Revision

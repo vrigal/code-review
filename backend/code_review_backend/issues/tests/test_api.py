@@ -38,8 +38,7 @@ class CreationAPITestCase(APITestCase):
             base_repository=self.repo,
         )
         self.diff = self.revision.diffs.create(
-            id=1234,
-            provider_id="PHID-DIFF-xxx",
+            provider_id="PHID-DIFF-1234",
             review_task_id="deadbeef123",
             mercurial_hash="coffee12345",
             repository=self.repo_try,
@@ -153,7 +152,7 @@ class CreationAPITestCase(APITestCase):
         self.diff.delete()
         data = {
             "id": 1234,
-            "provider_id": "PHID-DIFF-xxx",
+            "provider_id": "PHID-DIFF-1234",
             "review_task_id": "deadbeef123",
             "mercurial_hash": "coffee12345",
             "repository": "http://repo.test/try",
@@ -181,12 +180,13 @@ class CreationAPITestCase(APITestCase):
 
         # Response should have url to create issues
         self.assertEqual(
-            response.json()["issues_url"], "http://testserver/v1/diff/1234/issues/"
+            response.json()["issues_url"],
+            "http://testserver/v1/diff/PHID-DIFF-1234/issues/",
         )
 
         # Check a diff has been created
         self.assertEqual(Diff.objects.count(), 1)
-        diff = Diff.objects.get(pk=1234)
+        diff = Diff.objects.get(provider_id="PHID-DIFF-1234")
         self.assertEqual(diff.mercurial_hash, "coffee12345")
         self.assertEqual(diff.revision, self.revision)
 
@@ -204,13 +204,17 @@ class CreationAPITestCase(APITestCase):
         }
 
         # No auth will give a permission denied
-        response = self.client.post("/v1/diff/1234/issues/", data, format="json")
+        response = self.client.post(
+            "/v1/diff/PHID-DIFF-1234/issues/", data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Once authenticated, creation will work
         self.assertEqual(Issue.objects.count(), 0)
         self.client.force_authenticate(user=self.user)
-        response = self.client.post("/v1/diff/1234/issues/", data, format="json")
+        response = self.client.post(
+            "/v1/diff/PHID-DIFF-1234/issues/", data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # Do not check the content of issue created as it's a random UUID
@@ -281,7 +285,7 @@ class CreationAPITestCase(APITestCase):
         self.assertDictEqual(
             issue_data,
             {
-                "diff_id": None,
+                "diff_provider_id": None,
                 "issues": [
                     {
                         "analyzer": "remote-flake8",
@@ -334,7 +338,7 @@ class CreationAPITestCase(APITestCase):
         Check we can create issues on a revision with a reference to a diff
         """
         data = {
-            "diff_id": 1234,
+            "diff_provider_id": "PHID-DIFF-1234",
             "issues": [
                 {
                     "hash": "somemd5hash",
@@ -360,7 +364,7 @@ class CreationAPITestCase(APITestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "diff_id": 1234,
+                "diff_provider_id": "PHID-DIFF-1234",
                 "issues": [
                     {
                         "analyzer": "remote-flake8",
@@ -551,7 +555,7 @@ class CreationAPITestCase(APITestCase):
         self.assertDictEqual(
             issue_data,
             {
-                "diff_id": None,
+                "diff_provider_id": None,
                 # The same issue link is returned twice in the resulting payload
                 "issues": 2
                 * [

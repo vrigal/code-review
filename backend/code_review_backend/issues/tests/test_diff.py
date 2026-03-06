@@ -67,7 +67,7 @@ class DiffAPITestCase(APITestCase):
                 "previous": None,
                 "results": [
                     {
-                        "id": 3,
+                        "provider_id": "PHID-DIFF-3",
                         "revision": {
                             "id": 1,
                             "base_repository": "http://repo.test/myrepo",
@@ -87,10 +87,9 @@ class DiffAPITestCase(APITestCase):
                             "slug": "myrepo-try",
                             "url": "http://repo.test/try",
                         },
-                        "provider_id": "PHID-DIFF-3",
                         "review_task_id": "task-2",
                         "mercurial_hash": "30b501affc4d3b9c670fc297ab903b406afd5f04",
-                        "issues_url": "http://testserver/v1/diff/3/issues/",
+                        "issues_url": "http://testserver/v1/diff/PHID-DIFF-3/issues/",
                         "nb_issues": 0,
                         "nb_issues_publishable": 0,
                         "nb_warnings": 0,
@@ -98,7 +97,7 @@ class DiffAPITestCase(APITestCase):
                         "created": self.now,
                     },
                     {
-                        "id": 2,
+                        "provider_id": "PHID-DIFF-2",
                         "revision": {
                             "id": 2,
                             "base_repository": "http://repo.test/myrepo",
@@ -118,10 +117,9 @@ class DiffAPITestCase(APITestCase):
                             "slug": "myrepo-try",
                             "url": "http://repo.test/try",
                         },
-                        "provider_id": "PHID-DIFF-2",
                         "review_task_id": "task-1",
                         "mercurial_hash": "32d2a594cfef74fcb524028d1521d0d4bd98bd35",
-                        "issues_url": "http://testserver/v1/diff/2/issues/",
+                        "issues_url": "http://testserver/v1/diff/PHID-DIFF-2/issues/",
                         "nb_issues": 0,
                         "nb_issues_publishable": 0,
                         "nb_warnings": 0,
@@ -129,7 +127,7 @@ class DiffAPITestCase(APITestCase):
                         "created": self.now,
                     },
                     {
-                        "id": 1,
+                        "provider_id": "PHID-DIFF-1",
                         "revision": {
                             "id": 1,
                             "base_repository": "http://repo.test/myrepo",
@@ -149,10 +147,9 @@ class DiffAPITestCase(APITestCase):
                             "slug": "myrepo-try",
                             "url": "http://repo.test/try",
                         },
-                        "provider_id": "PHID-DIFF-1",
                         "review_task_id": "task-0",
                         "mercurial_hash": "a2ac78b7d12d6e55b9b15c1c2048a16c58c6c803",
-                        "issues_url": "http://testserver/v1/diff/1/issues/",
+                        "issues_url": "http://testserver/v1/diff/PHID-DIFF-1/issues/",
                         "nb_issues": 0,
                         "nb_issues_publishable": 0,
                         "nb_warnings": 0,
@@ -172,7 +169,10 @@ class DiffAPITestCase(APITestCase):
         response = self.client.get("/v1/diff/?repository=myrepo")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 3)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [3, 2, 1])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]],
+            ["PHID-DIFF-3", "PHID-DIFF-2", "PHID-DIFF-1"],
+        )
 
         # Missing repo
         response = self.client.get("/v1/diff/?repository=missing")
@@ -188,13 +188,18 @@ class DiffAPITestCase(APITestCase):
         response = self.client.get("/v1/diff/?search=10001")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [2])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]], ["PHID-DIFF-2"]
+        )
 
         # In title
         response = self.client.get("/v1/diff/?search=revision 1")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [3, 1])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]],
+            ["PHID-DIFF-3", "PHID-DIFF-1"],
+        )
 
     def test_filter_issues(self):
         """
@@ -205,7 +210,10 @@ class DiffAPITestCase(APITestCase):
         response = self.client.get("/v1/diff/?issues=no")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 3)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [3, 2, 1])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]],
+            ["PHID-DIFF-3", "PHID-DIFF-2", "PHID-DIFF-1"],
+        )
 
         # Any issues
         response = self.client.get("/v1/diff/?issues=any")

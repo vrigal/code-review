@@ -206,14 +206,14 @@ class IssueViewSet(
 
     def get_queryset(self):
         # Required to generate the OpenAPI documentation
-        if not self.kwargs.get("diff_id"):
+        if not self.kwargs.get("diff_provider_id"):
             return Issue.objects.none()
-        diff = get_object_or_404(Diff, id=self.kwargs["diff_id"])
+        diff = get_object_or_404(Diff, provider_id=self.kwargs["diff_provider_id"])
         return (
             Issue.objects.filter(issue_links__diff=diff)
             .annotate(publishable=Q(issue_links__in_patch=True) & Q(level=LEVEL_ERROR))
             .values(
-                "id",
+                "provider_id",
                 "hash",
                 "analyzer",
                 "analyzer_check",
@@ -503,7 +503,9 @@ router.register(
     basename="revision-diffs",
 )
 router.register(r"diff", DiffViewSet, basename="diffs")
-router.register(r"diff/(?P<diff_id>\d+)/issues", IssueViewSet, basename="issues")
+router.register(
+    r"diff/(?P<diff_provider_id>[0-9a-zA-Z-]+)/issues", IssueViewSet, basename="issues"
+)
 urls = router.urls + [
     path(
         "revision/<int:revision_id>/issues/",

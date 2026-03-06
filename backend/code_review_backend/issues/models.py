@@ -136,10 +136,10 @@ class Diff(models.Model):
     )
 
     def __str__(self):
-        return f"Diff {self.id}"
+        return f"Diff {self.provider_id}"
 
     class Meta:
-        ordering = ("id",)
+        ordering = ("created",)
 
 
 class IssueLink(models.Model):
