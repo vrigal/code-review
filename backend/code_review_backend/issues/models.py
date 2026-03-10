@@ -115,9 +115,9 @@ class Diff(models.Model):
     A revision can be linked to multiple successive diffs, or none in case of a repository push.
     """
 
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4)
+    id = models.AutoField(primary_key=True)
 
-    # We use a unique Provider ID among all providers, because they use hashes that cannot conflict
+    # Provider ID is unique among all providers (integer for Phabricator, hash for github)
     provider_id = models.CharField(max_length=40, unique=True)
     created = models.DateTimeField(auto_now_add=True)
     updated = models.DateTimeField(auto_now=True)
