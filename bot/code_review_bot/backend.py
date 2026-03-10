@@ -9,7 +9,7 @@ import structlog
 
 from code_review_bot import taskcluster
 from code_review_bot.config import GetAppUserAgent, settings
-from code_review_bot.revisions import GithubRevision, PhabricatorRevision
+from code_review_bot.revisions import PhabricatorRevision
 from code_review_bot.tasks.lint import MozLintIssue
 
 logger = structlog.get_logger(__name__)
@@ -105,10 +105,6 @@ class BackendAPI:
         if not self.enabled:
             logger.warn("Skipping issues publication on backend")
             return
-
-        if isinstance(revision, GithubRevision):
-            logger.warn("Skipping issues publication for github")
-            return {}
 
         published = 0
         assert (

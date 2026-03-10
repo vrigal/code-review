@@ -43,6 +43,16 @@ class GithubRevision(Revision):
         """
         return urlparse(self.repo_url).path.strip("/")
 
+    @property
+    def repository_slug(self):
+        """
+        Generate a slug from the Github repository.
+        This method copies the automatic slug creation in backend's RepositoryGetOrCreateField serializer field.
+        """
+        base_repo_url = self.pull_request.base.repo.html_url
+        parsed = urlparse(base_repo_url)
+        return parsed.path.lstrip("/").replace("/", "-")
+
     def load_patch(self):
         """
         Load the patch content for the current pull request HEAD
@@ -96,8 +106,6 @@ class GithubRevision(Revision):
             "head_repository": self.repo_url,
         }
         diff = {
-            # TODO: Use a unique integer ID here or set it from the backend
-            "id": 10000001,
             "provider": "github",
             "provider_id": self.pull_head_sha,
             "mercurial_hash": self.pull_head_sha,

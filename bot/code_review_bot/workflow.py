@@ -133,7 +133,7 @@ class Workflow:
             self.clone_repository(revision)
 
             # Mark know issues to avoid publishing them on this patch
-            self.find_previous_issues(issues, base_rev_changeset)
+            self.find_previous_issues(revision, issues, base_rev_changeset)
             new_issues_count = sum(issue.new_issue for issue in issues)
             logger.info(
                 f"Found {new_issues_count} new issues (over {len(issues)} total detected issues)",
@@ -498,7 +498,7 @@ class Workflow:
                 },
             )
 
-    def find_previous_issues(self, issues, base_rev_changeset=None):
+    def find_previous_issues(self, revision, issues, base_rev_changeset=None):
         """
         Look for known issues in the backend matching the given list of issues
 
@@ -521,9 +521,17 @@ class Workflow:
             base_revision_changeset=base_rev_changeset,
         )
 
+        if isinstance(revision, PhabricatorRevision):
+            repository_slug = "mozilla-central"
+        elif isinstance(revision, GithubRevision):
+            # TODO: Rely on the central repository for known issues
+            repository_slug = revision.repository_slug
+        else:
+            raise NotImplementedError
+
         for path, group_issues in issues_groups:
             known_issues = self.backend_api.list_repo_issues(
-                "mozilla-central",
+                repository_slug,
                 date=current_date,
                 revision_changeset=base_rev_changeset,
                 path=path,
