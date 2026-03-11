@@ -31,9 +31,11 @@ class LandoReporter(Reporter):
         Send an email to administrators
         """
         if not isinstance(revision, PhabricatorRevision):
-            raise NotImplementedError(
-                "Only Phabricator revisions are supported for now"
+            logger.warning(
+                "Lando publication only works with Phabricator revisions. Skipping.",
+                revision=revision,
             )
+            return
 
         assert (
             revision.phabricator_id and revision.phabricator_phid and revision.diff

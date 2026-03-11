@@ -47,8 +47,7 @@ class GithubRevision(Revision):
         Generate a slug from the Github repository.
         This method copies the automatic slug creation in backend's RepositoryGetOrCreateField serializer field.
         """
-        base_repo_url = self.pull_request.base.repo.html_url
-        parsed = urlparse(base_repo_url)
+        parsed = urlparse(self.repo_url)
         return parsed.path.lstrip("/").replace("/", "-")
 
     def load_patch(self):

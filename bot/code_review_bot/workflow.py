@@ -689,10 +689,10 @@ class Workflow:
         """
         Update build status on HarborMaster
         """
-        if not isinstance(revision, PhabricatorRevision):
-            raise NotImplementedError(
-                "Only Phabricator revisions are supported for now"
-            )
+        if isinstance(revision, GithubRevision):
+            logger.warning("No Lando publication for Github yet")
+            return
+
         assert isinstance(state, BuildState)
 
         # Skip github status update, as we rely on the github reporter for publication
