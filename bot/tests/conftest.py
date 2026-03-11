@@ -13,6 +13,8 @@ import uuid
 from collections import defaultdict, namedtuple
 from configparser import ConfigParser
 from contextlib import contextmanager
+from datetime import UTC, datetime, timedelta
+from textwrap import dedent
 from unittest.mock import MagicMock
 
 import hglib
@@ -280,6 +282,64 @@ def mock_phabricator(mock_config):
     config.set_config(config.ConfigIni(config_file.name))
 
     yield PhabricatorAPI(url="http://phabricator.test/api/", api_key="deadbeef")
+
+
+@pytest.fixture
+def mock_github(mock_config):
+    """
+    Mock default github API calls made by the client
+    """
+    diff = dedent(
+        """diff --git a/path/to/test.cpp b/path/to/test.cpp
+        index c57eff55..980a0d5f 100644
+        --- a/path/to/test.cpp
+        +++ b/path/to/test.cpp
+        @@ -1 +1 @@
+        -#include <random>
+        +Hello World!
+        """
+    )
+
+    responses.add(
+        responses.GET,
+        "https://github.tests.com/owner/repo-name/pull/1.diff",
+        json=diff,
+    )
+    responses.add(
+        responses.GET,
+        "https://api.github.com:443/app/installations",
+        json=[
+            {
+                "id": 123456789,
+                "access_tokens_url": "https://github.tests.com/app/installations/123456789/access_tokens",
+            }
+        ],
+    )
+    responses.add(
+        responses.POST,
+        "https://api.github.com:443/app/installations/123456789/access_tokens",
+        json={
+            "token": "auth_token",
+            "expires_at": (datetime.now(UTC) + timedelta(1)).strftime(
+                "%Y-%m-%dT%H:%M:%S.%fZ"
+            ),
+        },
+    )
+    responses.add(
+        responses.GET,
+        "https://api.github.com:443/repos/owner/repo-name",
+        json={"url": "https://api.github.com/repos/owner/repo-name"},
+    )
+    responses.add(
+        responses.GET,
+        "https://api.github.com:443/repos/owner/repo-name/pulls/1",
+        json={"url": "https://api.github.com/repos/owner/repo-name/pulls/1"},
+    )
+    responses.add(
+        responses.GET,
+        "https://api.github.com:443/repos/owner/repo-name/commits/aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        json={"sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},
+    )
 
 
 @pytest.fixture
