@@ -12,7 +12,8 @@ def detect_new_for_revision(diff: Diff, path: str, hash: str) -> bool:
     assert diff is not None, "Missing diff"
     return not IssueLink.objects.filter(
         revision_id=diff.revision_id,
-        diff_id__lt=diff.id,
+        # Ideally we would rely on the diff integer ID, but that information was lost adding the Github support
+        diff__created__lt=diff.created,
         issue__path=path,
         issue__hash=hash,
     ).exists()

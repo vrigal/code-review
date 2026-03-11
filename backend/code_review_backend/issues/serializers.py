@@ -35,7 +35,7 @@ class RepositoryGetOrCreateField(serializers.SlugRelatedField):
     )
     default_error_messages = {
         **serializers.SlugRelatedField.default_error_messages,
-        "invalid_url": "Repository URL must match hg.mozilla.org.",
+        "invalid_url": "Repository base URL is not allowed.",
     }
     queryset = Repository.objects.all()
 
@@ -135,14 +135,15 @@ class DiffSerializer(serializers.ModelSerializer):
         queryset=Repository.objects.all(), slug_field="url"
     )
     issues_url = serializers.HyperlinkedIdentityField(
-        view_name="issues-list", lookup_url_kwarg="diff_id"
+        view_name="issues-list",
+        lookup_url_kwarg="diff_provider_id",
+        lookup_field="provider_id",
     )
 
     class Meta:
         model = Diff
         fields = (
-            "id",
-            "phid",
+            "provider_id",
             "review_task_id",
             "repository",
             "mercurial_hash",
@@ -163,7 +164,7 @@ class DiffLightSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Diff
-        fields = ("id", "repository", "revision")
+        fields = ("provider_id", "repository", "revision")
 
 
 class DiffFullSerializer(serializers.ModelSerializer):
@@ -175,7 +176,9 @@ class DiffFullSerializer(serializers.ModelSerializer):
     revision = RevisionSerializer(read_only=True)
     repository = RepositorySerializer(read_only=True)
     issues_url = serializers.HyperlinkedIdentityField(
-        view_name="issues-list", lookup_url_kwarg="diff_id"
+        view_name="issues-list",
+        lookup_url_kwarg="diff_provider_id",
+        lookup_field="provider_id",
     )
     nb_issues = serializers.IntegerField(read_only=True)
     nb_issues_publishable = serializers.IntegerField(read_only=True)
@@ -185,9 +188,8 @@ class DiffFullSerializer(serializers.ModelSerializer):
     class Meta:
         model = Diff
         fields = (
-            "id",
+            "provider_id",
             "revision",
-            "phid",
             "review_task_id",
             "repository",
             "mercurial_hash",
@@ -264,7 +266,8 @@ class SingleIssueBulkSerializer(IssueSerializer):
 
 
 class IssueBulkSerializer(serializers.Serializer):
-    diff_id = serializers.PrimaryKeyRelatedField(
+    diff_provider_id = serializers.SlugRelatedField(
+        slug_field="provider_id",
         # Initialized depending on the revision used for the creation
         queryset=Diff.objects.none(),
         style={"base_template": "input.html"},
@@ -277,11 +280,11 @@ class IssueBulkSerializer(serializers.Serializer):
         super().__init__(*args, **kwargs)
         if not self.context.get("revision"):
             return
-        self.fields["diff_id"].queryset = self.context["revision"].diffs.all()
+        self.fields["diff_provider_id"].queryset = self.context["revision"].diffs.all()
 
     @transaction.atomic
     def create(self, validated_data):
-        diff = validated_data.get("diff_id", None)
+        diff = validated_data.get("diff_provider_id", None)
         link_attrs = defaultdict(list)
         # Separate attributes that are specific to the IssueLink M2M
         for issue in validated_data["issues"]:
@@ -340,7 +343,7 @@ class IssueBulkSerializer(serializers.Serializer):
                 output.append(output_link)
 
         return {
-            "diff_id": diff,
+            "diff_provider_id": diff,
             "issues": output,
         }
 
