@@ -6,6 +6,7 @@ from collections import defaultdict
 from datetime import date, datetime, timedelta
 
 from django.conf import settings
+from django.core.exceptions import BadRequest
 from django.db.models import BooleanField, Count, ExpressionWrapper, Prefetch, Q
 from django.db.models.functions import TruncDate
 from django.shortcuts import get_object_or_404
@@ -77,10 +78,15 @@ class RevisionViewSet(CreateListRetrieveViewSet):
         # When a revision already exists with that phabricator ID we return its data without creating a new one
         # This value is used by the bot to identify a revision and publish new Phabricator diffs.
         # The phabricator ID can be null (on mozilla-central) so we must always try to create a revision for that case
-        phabricator_id = request.data["phabricator_id"]
-        if phabricator_id is not None:
+        try:
+            provider = request.data["provider"]
+            provider_id = request.data["provider_id"]
+        except KeyError:
+            raise BadRequest("Invalid provider identification")
+        if provider_id is not None:
             if revision := Revision.objects.filter(
-                phabricator_id=phabricator_id
+                provider=provider,
+                provider_id=provider_id,
             ).first():
                 serializer = RevisionSerializer(
                     instance=revision, context={"request": request}
@@ -166,7 +172,7 @@ class DiffViewSet(viewsets.ReadOnlyModelViewSet):
         if query is not None:
             search_query = (
                 Q(id__icontains=query)
-                | Q(revision__phabricator_id__icontains=query)
+                | Q(revision__provider_id__icontains=query)
                 | Q(revision__bugzilla_id__icontains=query)
                 | Q(revision__title__icontains=query)
             )

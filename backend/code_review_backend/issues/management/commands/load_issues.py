@@ -213,9 +213,9 @@ class Command(BaseCommand):
             return None, None
 
         revision, _ = head_repository.head_revisions.get_or_create(
-            phabricator_id=data["id"],
+            provider="phabricator",
+            provider_id=data["id"],
             defaults={
-                "phabricator_phid": data["phid"],
                 "title": data["title"],
                 "bugzilla_id": int(data["bugzilla_id"])
                 if data["bugzilla_id"]
@@ -224,10 +224,9 @@ class Command(BaseCommand):
             },
         )
         diff, _ = revision.diffs.get_or_create(
-            id=data["diff_id"],
+            provider_id=data["diff_phid"],
             defaults={
                 "repository": head_repository,
-                "phid": data["diff_phid"],
                 "review_task_id": task_id,
                 "mercurial_hash": data["mercurial_revision"],
             },
