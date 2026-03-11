@@ -332,10 +332,12 @@ def mock_revision(mock_phabricator, mock_try_task, mock_decision_task, mock_conf
     """
     Mock a mercurial revision
     """
-    from code_review_bot.revisions import PhabricatorRevision
+    from code_review_bot.revisions import PhabricatorRevision, Revision
 
     with mock_phabricator as api:
-        return PhabricatorRevision.from_try_task(mock_try_task, mock_decision_task, api)
+        revision = Revision.from_try_task(mock_try_task, mock_decision_task, api)
+        assert isinstance(revision, PhabricatorRevision)
+        return revision
 
 
 @pytest.fixture
