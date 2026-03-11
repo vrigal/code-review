@@ -31,15 +31,14 @@ class CreationAPITestCase(APITestCase):
         )
         # Create revision and diff
         self.revision = self.repo_try.head_revisions.create(
-            phabricator_id=456,
-            phabricator_phid="PHID-REV-XXX",
+            provider="phabricator",
+            provider_id=456,
             title="Bug XXX - Yet Another bug",
             bugzilla_id=78901,
             base_repository=self.repo,
         )
         self.diff = self.revision.diffs.create(
-            id=1234,
-            phid="PHID-DIFF-xxx",
+            provider_id="PHID-DIFF-1234",
             review_task_id="deadbeef123",
             mercurial_hash="coffee12345",
             repository=self.repo_try,
@@ -51,8 +50,8 @@ class CreationAPITestCase(APITestCase):
         """
         self.revision.delete()
         data = {
-            "phabricator_id": 123,
-            "phabricator_phid": "PHID-REV-xxx",
+            "provider": "phabricator",
+            "provider_id": 123,
             "title": "Bug XXX - Some bug",
             "bugzilla_id": 123456,
             "base_repository": "http://repo.test/myrepo",
@@ -78,9 +77,9 @@ class CreationAPITestCase(APITestCase):
             "bugzilla_id": 123456,
             "diffs_url": f"http://testserver/v1/revision/{revision_id}/diffs/",
             "issues_bulk_url": f"http://testserver/v1/revision/{revision_id}/issues/",
-            "phabricator_url": "https://phabricator.services.mozilla.com/D123",
-            "phabricator_id": 123,
-            "phabricator_phid": "PHID-REV-xxx",
+            "url": "https://phabricator.services.mozilla.com/D123",
+            "provider": "phabricator",
+            "provider_id": 123,
             "base_repository": "http://repo.test/myrepo",
             "head_repository": "http://repo.test/myrepo",
             "base_changeset": "123456789ABCDEF",
@@ -88,7 +87,7 @@ class CreationAPITestCase(APITestCase):
             "title": "Bug XXX - Some bug",
         }
         self.assertEqual(Revision.objects.count(), 1)
-        revision = Revision.objects.get(phabricator_id=123)
+        revision = Revision.objects.get(provider_id=123)
         self.assertEqual(revision.title, "Bug XXX - Some bug")
         self.assertEqual(revision.bugzilla_id, 123456)
         self.assertDictEqual(response.json(), expected_response)
@@ -103,8 +102,8 @@ class CreationAPITestCase(APITestCase):
     def test_create_revision_wrong_new_repo(self):
         self.revision.delete()
         data = {
-            "phabricator_id": 123,
-            "phabricator_phid": "PHID-REV-xxx",
+            "provider": "phabricator",
+            "provider_id": 123,
             "title": "Bug XXX - Some bug",
             "bugzilla_id": 123456,
             "base_repository": "http://notamozrepo.test/myrepo",
@@ -120,16 +119,16 @@ class CreationAPITestCase(APITestCase):
         self.assertDictEqual(
             response.json(),
             {
-                "base_repository": ["Repository URL must match hg.mozilla.org."],
-                "head_repository": ["Repository URL must match hg.mozilla.org."],
+                "base_repository": ["Repository base URL is not allowed."],
+                "head_repository": ["Repository base URL is not allowed."],
             },
         )
 
     def test_create_revision_creates_new_repo(self):
         self.revision.delete()
         data = {
-            "phabricator_id": 123,
-            "phabricator_phid": "PHID-REV-xxx",
+            "provider": "phabricator",
+            "provider_id": 123,
             "title": "Bug XXX - Some bug",
             "bugzilla_id": 123456,
             "base_repository": "http://repo.test/myrepo",
@@ -144,7 +143,7 @@ class CreationAPITestCase(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         new_repo = Repository.objects.get(url="http://hg.mozilla.org/a/new/repo")
         self.assertIsNotNone(new_repo)
-        self.assertEqual(new_repo.slug, "a/new/repo")
+        self.assertEqual(new_repo.slug, "a-new-repo")
 
     def test_create_diff(self):
         """
@@ -153,7 +152,7 @@ class CreationAPITestCase(APITestCase):
         self.diff.delete()
         data = {
             "id": 1234,
-            "phid": "PHID-DIFF-xxx",
+            "provider_id": "PHID-DIFF-1234",
             "review_task_id": "deadbeef123",
             "mercurial_hash": "coffee12345",
             "repository": "http://repo.test/try",
@@ -181,12 +180,13 @@ class CreationAPITestCase(APITestCase):
 
         # Response should have url to create issues
         self.assertEqual(
-            response.json()["issues_url"], "http://testserver/v1/diff/1234/issues/"
+            response.json()["issues_url"],
+            "http://testserver/v1/diff/PHID-DIFF-1234/issues/",
         )
 
         # Check a diff has been created
         self.assertEqual(Diff.objects.count(), 1)
-        diff = Diff.objects.get(pk=1234)
+        diff = Diff.objects.get(provider_id="PHID-DIFF-1234")
         self.assertEqual(diff.mercurial_hash, "coffee12345")
         self.assertEqual(diff.revision, self.revision)
 
@@ -204,13 +204,17 @@ class CreationAPITestCase(APITestCase):
         }
 
         # No auth will give a permission denied
-        response = self.client.post("/v1/diff/1234/issues/", data, format="json")
+        response = self.client.post(
+            "/v1/diff/PHID-DIFF-1234/issues/", data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
         # Once authenticated, creation will work
         self.assertEqual(Issue.objects.count(), 0)
         self.client.force_authenticate(user=self.user)
-        response = self.client.post("/v1/diff/1234/issues/", data, format="json")
+        response = self.client.post(
+            "/v1/diff/PHID-DIFF-1234/issues/", data, format="json"
+        )
         self.assertEqual(response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
 
         # Do not check the content of issue created as it's a random UUID
@@ -281,7 +285,7 @@ class CreationAPITestCase(APITestCase):
         self.assertDictEqual(
             issue_data,
             {
-                "diff_id": None,
+                "diff_provider_id": None,
                 "issues": [
                     {
                         "analyzer": "remote-flake8",
@@ -334,7 +338,7 @@ class CreationAPITestCase(APITestCase):
         Check we can create issues on a revision with a reference to a diff
         """
         data = {
-            "diff_id": 1234,
+            "diff_provider_id": "PHID-DIFF-1234",
             "issues": [
                 {
                     "hash": "somemd5hash",
@@ -354,13 +358,13 @@ class CreationAPITestCase(APITestCase):
             )
             self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
-        self.assertEqual(Issue.objects.filter(revisions__phabricator_id=456).count(), 1)
+        self.assertEqual(Issue.objects.filter(revisions__provider_id=456).count(), 1)
 
-        issue = Issue.objects.filter(revisions__phabricator_id=456).get()
+        issue = Issue.objects.filter(revisions__provider_id=456).get()
         self.assertDictEqual(
             response.json(),
             {
-                "diff_id": 1234,
+                "diff_provider_id": "PHID-DIFF-1234",
                 "issues": [
                     {
                         "analyzer": "remote-flake8",
@@ -551,7 +555,7 @@ class CreationAPITestCase(APITestCase):
         self.assertDictEqual(
             issue_data,
             {
-                "diff_id": None,
+                "diff_provider_id": None,
                 # The same issue link is returned twice in the resulting payload
                 "issues": 2
                 * [
@@ -665,7 +669,7 @@ class CreationAPITestCase(APITestCase):
         self.client.force_authenticate(user=self.user)
         another_diff = self.revision.diffs.create(
             id=56748,
-            phid="PHID-DIFF-yyy",
+            provider_id="PHID-DIFF-yyy",
             review_task_id="deadbeef456",
             mercurial_hash="coffee67890",
             repository=self.repo_try,
