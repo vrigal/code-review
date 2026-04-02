@@ -85,7 +85,7 @@ class PhabricatorRevision(Revision):
         def repo_slug(url):
             if url.startswith("https://hg.mozilla.org/"):
                 url = url[23:]
-            return url.replace("/", "-")
+            return url.replace("/", "+")
 
         out = []
 
