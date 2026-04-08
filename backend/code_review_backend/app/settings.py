@@ -212,7 +212,7 @@ LOGGING = {
 PHABRICATOR_HOST = "https://phabricator.services.mozilla.com"
 
 # Limit the automatic creation of reositories to allowed hosts
-ALLOWED_REPOSITORY_HOSTS = ["hg.mozilla.org"]
+ALLOWED_REPOSITORY_HOSTS = ["hg.mozilla.org", "github.com"]
 
 DYNO = env("DYNO")
 # Heroku settings override to run the web app through dyno

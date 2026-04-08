@@ -30,8 +30,8 @@ class DiffAPITestCase(APITestCase):
         for i in range(2):
             cls.repo_try.head_revisions.create(
                 id=i + 1,
-                phabricator_id=i + 1,
-                phabricator_phid=f"PHID-DREV-{i+1}",
+                provider="phabricator",
+                provider_id=i + 1,
                 title=f"Revision {i+1}",
                 bugzilla_id=10000 + i,
                 base_repository=cls.repo,
@@ -39,7 +39,7 @@ class DiffAPITestCase(APITestCase):
         for i in range(3):
             Diff.objects.create(
                 id=i + 1,
-                phid=f"PHID-DIFF-{i+1}",
+                provider_id=f"PHID-DIFF-{i+1}",
                 revision_id=(i % 2) + 1,
                 review_task_id=f"task-{i}",
                 mercurial_hash=hashlib.sha1(f"hg {i}".encode()).hexdigest(),
@@ -66,30 +66,29 @@ class DiffAPITestCase(APITestCase):
                 "previous": None,
                 "results": [
                     {
-                        "id": 3,
+                        "provider_id": "PHID-DIFF-3",
                         "revision": {
                             "id": 1,
                             "base_repository": "http://repo.test/myrepo",
                             "head_repository": "http://repo.test/try",
                             "base_changeset": None,
                             "head_changeset": None,
-                            "phabricator_id": 1,
-                            "phabricator_phid": "PHID-DREV-1",
+                            "provider": "phabricator",
+                            "provider_id": 1,
                             "title": "Revision 1",
                             "bugzilla_id": 10000,
                             "diffs_url": "http://testserver/v1/revision/1/diffs/",
                             "issues_bulk_url": "http://testserver/v1/revision/1/issues/",
-                            "phabricator_url": "https://phabricator.services.mozilla.com/D1",
+                            "url": "https://phabricator.services.mozilla.com/D1",
                         },
                         "repository": {
                             "id": 2,
                             "slug": "myrepo-try",
                             "url": "http://repo.test/try",
                         },
-                        "phid": "PHID-DIFF-3",
                         "review_task_id": "task-2",
                         "mercurial_hash": "30b501affc4d3b9c670fc297ab903b406afd5f04",
-                        "issues_url": "http://testserver/v1/diff/3/issues/",
+                        "issues_url": "http://testserver/v1/diff/PHID-DIFF-3/issues/",
                         "nb_issues": 0,
                         "nb_issues_publishable": 0,
                         "nb_warnings": 0,
@@ -97,30 +96,29 @@ class DiffAPITestCase(APITestCase):
                         "created": self.now,
                     },
                     {
-                        "id": 2,
+                        "provider_id": "PHID-DIFF-2",
                         "revision": {
                             "id": 2,
                             "base_repository": "http://repo.test/myrepo",
                             "head_repository": "http://repo.test/try",
                             "base_changeset": None,
                             "head_changeset": None,
-                            "phabricator_id": 2,
-                            "phabricator_phid": "PHID-DREV-2",
+                            "provider": "phabricator",
+                            "provider_id": 2,
                             "title": "Revision 2",
                             "bugzilla_id": 10001,
                             "diffs_url": "http://testserver/v1/revision/2/diffs/",
                             "issues_bulk_url": "http://testserver/v1/revision/2/issues/",
-                            "phabricator_url": "https://phabricator.services.mozilla.com/D2",
+                            "url": "https://phabricator.services.mozilla.com/D2",
                         },
                         "repository": {
                             "id": 2,
                             "slug": "myrepo-try",
                             "url": "http://repo.test/try",
                         },
-                        "phid": "PHID-DIFF-2",
                         "review_task_id": "task-1",
                         "mercurial_hash": "32d2a594cfef74fcb524028d1521d0d4bd98bd35",
-                        "issues_url": "http://testserver/v1/diff/2/issues/",
+                        "issues_url": "http://testserver/v1/diff/PHID-DIFF-2/issues/",
                         "nb_issues": 0,
                         "nb_issues_publishable": 0,
                         "nb_warnings": 0,
@@ -128,30 +126,29 @@ class DiffAPITestCase(APITestCase):
                         "created": self.now,
                     },
                     {
-                        "id": 1,
+                        "provider_id": "PHID-DIFF-1",
                         "revision": {
                             "id": 1,
                             "base_repository": "http://repo.test/myrepo",
                             "head_repository": "http://repo.test/try",
                             "base_changeset": None,
                             "head_changeset": None,
-                            "phabricator_id": 1,
-                            "phabricator_phid": "PHID-DREV-1",
+                            "provider": "phabricator",
+                            "provider_id": 1,
                             "title": "Revision 1",
                             "bugzilla_id": 10000,
                             "diffs_url": "http://testserver/v1/revision/1/diffs/",
                             "issues_bulk_url": "http://testserver/v1/revision/1/issues/",
-                            "phabricator_url": "https://phabricator.services.mozilla.com/D1",
+                            "url": "https://phabricator.services.mozilla.com/D1",
                         },
                         "repository": {
                             "id": 2,
                             "slug": "myrepo-try",
                             "url": "http://repo.test/try",
                         },
-                        "phid": "PHID-DIFF-1",
                         "review_task_id": "task-0",
                         "mercurial_hash": "a2ac78b7d12d6e55b9b15c1c2048a16c58c6c803",
-                        "issues_url": "http://testserver/v1/diff/1/issues/",
+                        "issues_url": "http://testserver/v1/diff/PHID-DIFF-1/issues/",
                         "nb_issues": 0,
                         "nb_issues_publishable": 0,
                         "nb_warnings": 0,
@@ -171,7 +168,10 @@ class DiffAPITestCase(APITestCase):
         response = self.client.get("/v1/diff/?repository=myrepo")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 3)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [3, 2, 1])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]],
+            ["PHID-DIFF-3", "PHID-DIFF-2", "PHID-DIFF-1"],
+        )
 
         # Missing repo
         response = self.client.get("/v1/diff/?repository=missing")
@@ -187,13 +187,18 @@ class DiffAPITestCase(APITestCase):
         response = self.client.get("/v1/diff/?search=10001")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 1)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [2])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]], ["PHID-DIFF-2"]
+        )
 
         # In title
         response = self.client.get("/v1/diff/?search=revision 1")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 2)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [3, 1])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]],
+            ["PHID-DIFF-3", "PHID-DIFF-1"],
+        )
 
     def test_filter_issues(self):
         """
@@ -204,7 +209,10 @@ class DiffAPITestCase(APITestCase):
         response = self.client.get("/v1/diff/?issues=no")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.json()["count"], 3)
-        self.assertEqual([d["id"] for d in response.json()["results"]], [3, 2, 1])
+        self.assertEqual(
+            [d["provider_id"] for d in response.json()["results"]],
+            ["PHID-DIFF-3", "PHID-DIFF-2", "PHID-DIFF-1"],
+        )
 
         # Any issues
         response = self.client.get("/v1/diff/?issues=any")

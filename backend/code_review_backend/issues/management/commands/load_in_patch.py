@@ -79,11 +79,11 @@ def process_diff(diff: Diff):
             detect_in_patch(issue_link, lines) for issue_link in diff.issue_links.all()
         ]
         logging.info(
-            f"Found {len([i for i in issue_links if i.in_patch])} issue link in patch for {diff.id}"
+            f"Found {len([i for i in issue_links if i.in_patch])} issue link in patch for {diff.provider_id}"
         )
         IssueLink.objects.bulk_update(issue_links, ["in_patch"])
     except Exception as e:
-        logging.info(f"Failure on diff {diff.id}: {e}")
+        logging.info(f"Failure on diff {diff.provider_id}: {e}")
 
 
 class Command(BaseCommand):
