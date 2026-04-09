@@ -213,7 +213,7 @@ class IssueViewSet(
             Issue.objects.filter(issue_links__diff=diff)
             .annotate(publishable=Q(issue_links__in_patch=True) & Q(level=LEVEL_ERROR))
             .values(
-                "provider_id",
+                "id",
                 "hash",
                 "analyzer",
                 "analyzer_check",
