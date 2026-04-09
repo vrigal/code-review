@@ -217,14 +217,14 @@ export default {
                   <div class="dropdown-content">
                     <hr class="dropdown-divider" />
                     <a
-                      v-if="revision.provider == 'phabricator'"
+                      v-if="diff.revision.provider == 'phabricator'"
                       class="dropdown-item"
                       :href="diff.revision.url"
                       target="_blank"
                       >Phabricator D{{ diff.revision.provider_id }}</a
                     >
                     <a
-                      v-if="revision.provider == 'github'"
+                      v-if="diff.revision.provider == 'github'"
                       class="dropdown-item"
                       :href="diff.revision.url"
                       target="_blank"
