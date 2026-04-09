@@ -66,6 +66,7 @@ class DiffAPITestCase(APITestCase):
                 "previous": None,
                 "results": [
                     {
+                        "id": 3,
                         "provider_id": "PHID-DIFF-3",
                         "revision": {
                             "id": 1,
@@ -96,6 +97,7 @@ class DiffAPITestCase(APITestCase):
                         "created": self.now,
                     },
                     {
+                        "id": 2,
                         "provider_id": "PHID-DIFF-2",
                         "revision": {
                             "id": 2,
@@ -126,6 +128,7 @@ class DiffAPITestCase(APITestCase):
                         "created": self.now,
                     },
                     {
+                        "id": 1,
                         "provider_id": "PHID-DIFF-1",
                         "revision": {
                             "id": 1,

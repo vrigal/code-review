@@ -191,6 +191,7 @@ class DiffFullSerializer(serializers.ModelSerializer):
     class Meta:
         model = Diff
         fields = (
+            "id",
             "provider_id",
             "revision",
             "review_task_id",
