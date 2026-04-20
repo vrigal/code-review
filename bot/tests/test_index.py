@@ -95,8 +95,8 @@ def test_index_autoland(
     calls = mock_workflow.index_service.insertTask.call_args_list
 
     assert [c[0][0] for c in calls] == [
-        "project.relman.test.code-review.head_repo.integration-autoland.deadbeef123",
-        "project.relman.test.code-review.head_repo.integration-autoland.deadbeef123.12345deadbeef",
+        "project.relman.test.code-review.head_repo.integration+autoland.deadbeef123",
+        "project.relman.test.code-review.head_repo.integration+autoland.deadbeef123.12345deadbeef",
     ]
 
     # Check all calls have the same shared payload
