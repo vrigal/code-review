@@ -48,7 +48,7 @@ class GithubRevision(Revision):
         This method copies the automatic slug creation in backend's RepositoryGetOrCreateField serializer field.
         """
         parsed = urlparse(self.base_repo_url)
-        return parsed.path.lstrip("/").replace("/", "-")
+        return parsed.path.lstrip("/").replace("/", "+")
 
     def load_patch(self):
         """
