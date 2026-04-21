@@ -271,12 +271,16 @@ class Revision(ABC):
         from code_review_bot.revisions.github import GithubRevision
         from code_review_bot.revisions.phabricator import PhabricatorRevision
 
-        # Load build target phid from the task env
-        code_review = try_task["extra"]["code-review"]
+        task_env = decision_task.get("payload", {}).get("env", {})
 
-        if "github" in code_review:
-            return GithubRevision(**code_review["github"])
+        if task_env.get("GECKO_REPOSITORY_TYPE") == "git":
+            return GithubRevision(
+                base_repo_url=task_env["GECKO_BASE_REPOSITORY"],
+                head_repo_url=task_env["GECKO_HEAD_REPOSITORY"],
+                pull_number=int(task_env["GECKO_PULL_REQUEST_NUMBER"]),
+                pull_head_sha=task_env["GECKO_HEAD_REV"],
+            )
         else:
             return PhabricatorRevision.from_try_task(
-                code_review, decision_task, phabricator
+                try_task["extra"]["code-review"], decision_task, phabricator
             )
