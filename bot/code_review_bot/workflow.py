@@ -18,6 +18,7 @@ from code_review_bot.analysis import (
 )
 from code_review_bot.backend import BackendAPI
 from code_review_bot.config import settings
+from code_review_bot.git import git_clone
 from code_review_bot.mercurial import MercurialWorker, Repository, robust_checkout
 from code_review_bot.report.debug import DebugReporter
 from code_review_bot.revisions import GithubRevision, PhabricatorRevision, Revision
@@ -266,7 +267,7 @@ class Workflow:
             return
 
         # Cannot run without either mercurial or github cache configured
-        if not settings.mercurial_cache and not settings.github_cache:
+        if not settings.mercurial_cache and not settings.git_cache:
             raise Exception(
                 "One of Mercurial cache or github cache must be configured to start analysis"
             )
@@ -363,32 +364,52 @@ class Workflow:
         Clone the repo locally when configured
         On production this should use a Taskcluster cache
         """
-        if not isinstance(revision, PhabricatorRevision):
-            logger.info(
-                "Mercurial clone only supports Phabricator revisions, skipping."
-            )
-            return
-
-        if not settings.mercurial_cache:
-            logger.debug("Local clone not required")
-            return
         if self.clone_available:
             logger.debug("Local clone already setup")
             return
 
-        logger.info(
-            "Cloning revision to build issues",
-            repo=revision.base_repository,
-            changeset=revision.head_changeset,
-            dest=settings.mercurial_cache_checkout,
-        )
-        robust_checkout(
-            repo_upstream_url=revision.base_repository,
-            repo_url=revision.head_repository,
-            revision=revision.head_changeset,
-            checkout_dir=settings.mercurial_cache_checkout,
-            sharebase_dir=settings.mercurial_cache_sharebase,
-        )
+        if not settings.mercurial_cache and not settings.git_cache:
+            logger.info("Local clone not required")
+            return
+
+        if isinstance(revision, PhabricatorRevision):
+            # Mercurial clone
+            if not settings.mercurial_cache:
+                raise Exception(
+                    "Mercurial cache directory is not configured, cannot clone"
+                )
+            logger.info(
+                "Cloning mercurial revision to build issues",
+                repo=revision.base_repository,
+                changeset=revision.head_changeset,
+                dest=settings.mercurial_cache_checkout,
+            )
+            robust_checkout(
+                repo_upstream_url=revision.base_repository,
+                repo_url=revision.head_repository,
+                revision=revision.head_changeset,
+                checkout_dir=settings.mercurial_cache_checkout,
+                sharebase_dir=settings.mercurial_cache_sharebase,
+            )
+        elif isinstance(revision, GithubRevision):
+            # Git clone
+            if not settings.git_cache:
+                raise Exception("Git cache directory is not configured, cannot clone")
+            logger.info(
+                "Cloning mercurial revision to build issues",
+                repo=revision.base_repository,
+                changeset=revision.head_changeset,
+                dest=settings.git_cache,
+            )
+            git_clone(
+                base_repository=revision.base_repository,
+                head_repository=revision.head_repository,
+                revision=revision.head_changeset,
+                destination=settings.git_cache,
+            )
+        else:
+            raise NotImplementedError
+
         self.clone_available = True
 
     def publish(self, revision, issues, task_failures, notices, reviewers):

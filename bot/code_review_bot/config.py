@@ -58,7 +58,7 @@ class Settings:
 
         # Cache to store whole repositories
         self.mercurial_cache = None
-        self.github_cache = None
+        self.git_cache = None
 
         # SSH Key used to push on try
         self.ssh_key = None
@@ -79,7 +79,7 @@ class Settings:
         repositories,
         ssh_key=None,
         mercurial_cache=None,
-        github_cache=None,
+        git_cache=None,
     ):
         # Detect source from env
         if "TRY_TASK_ID" in os.environ and "TRY_TASK_GROUP_ID" in os.environ:
@@ -151,15 +151,15 @@ class Settings:
             self.ssh_key = ssh_key
 
         # Store github cache path
-        if github_cache is not None:
-            self.github_cache = Path(github_cache)
+        if git_cache is not None:
+            self.git_cache = Path(git_cache)
             assert (
-                self.github_cache.exists()
-            ), f"Github cache does not exist {self.github_cache}"
+                self.git_cache.exists()
+            ), f"Github cache does not exist {self.git_cache}"
             logger.info("Using Github cache", path=self.mercurial_cache)
         else:
             # Fallback to mercurial cache to ease migration on production systems
-            self.github_cache = self.mercurial_cache
+            self.git_cache = self.mercurial_cache
 
     def load_user_blacklist(self, usernames, phabricator_api):
         """

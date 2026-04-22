@@ -201,9 +201,9 @@ class Issue(abc.ABC):
                 local_repository = settings.mercurial_cache_checkout
         elif isinstance(self.revision, GithubRevision):
             assert (
-                settings.github_cache
+                settings.git_cache
             ), "Github cache repository is mandatory to analyse a github revision"
-            local_repository = settings.github_cache
+            local_repository = settings.git_cache
         else:
             raise Exception(self.revision.__class__)
             raise NotImplementedError
