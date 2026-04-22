@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 import requests
 import structlog
 
+from code_review_bot.git import build_repo_slug
 from code_review_bot.revisions import Revision
 
 logger = structlog.get_logger(__name__)
@@ -53,10 +54,8 @@ class GithubRevision(Revision):
     def repository_slug(self):
         """
         Generate a slug from the Github repository.
-        This method copies the automatic slug creation in backend's RepositoryGetOrCreateField serializer field.
         """
-        parsed = urlparse(self.base_repository)
-        return parsed.path.lstrip("/").replace("/", "_")
+        return build_repo_slug(self.base_repository)
 
     def load_patch(self):
         """

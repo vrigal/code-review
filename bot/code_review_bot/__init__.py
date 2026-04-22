@@ -203,7 +203,7 @@ class Issue(abc.ABC):
             assert (
                 settings.git_cache
             ), "Github cache repository is mandatory to analyse a github revision"
-            local_repository = settings.git_cache
+            local_repository = settings.git_cache / self.revision.repository_slug
         else:
             raise Exception(self.revision.__class__)
             raise NotImplementedError

@@ -6,10 +6,11 @@ from git import Repo
 logger = structlog.getLogger(__name__)
 
 
-def repo_slug(repo_url):
+def build_repo_slug(repo_url):
     """
     Build a slug from a github repository url
-    mozilla/firefox would become mozilla-firefox
+    mozilla-firefox/firefox would become mozilla-firefox_firefox
+    This method copies the automatic slug creation in backend's RepositoryGetOrCreateField serializer field.
     """
     parts = urlparse(repo_url)
     assert parts.netloc == "github.com", "Only github repositories are supported"
@@ -18,7 +19,7 @@ def repo_slug(repo_url):
     if path.endswith(".git"):
         path = path[:-4]
 
-    return path.replace("/", "-")
+    return path.replace("/", "_")
 
 
 def git_clone(base_repository, head_repository, revision, destination):
@@ -28,8 +29,8 @@ def git_clone(base_repository, head_repository, revision, destination):
     """
 
     # Build slug
-    base_slug = repo_slug(base_repository)
-    head_slug = repo_slug(head_repository)
+    base_slug = build_repo_slug(base_repository)
+    head_slug = build_repo_slug(head_repository)
 
     logger.info(base_slug, head_slug)
 
