@@ -17,22 +17,30 @@ class GithubRevision(Revision):
     A revision from a github pull-request
     """
 
-    def __init__(self, base_repository, head_repository, pull_number, pull_head_sha):
+    def __init__(
+        self,
+        base_repository,
+        base_changeset,
+        head_repository,
+        head_changeset,
+        pull_number,
+    ):
         super().__init__()
 
         self.base_repository = base_repository
+        self.base_changeset = base_changeset
         self.head_repository = head_repository
+        self.head_changeset = head_changeset
         self.pull_number = pull_number
-        self.pull_head_sha = pull_head_sha
 
         # Load the patch from Github
         self.patch = self.load_patch()
 
     def __str__(self):
-        return f"Github pull request {self.base_repository} #{self.pull_number} ({self.pull_head_sha[:8]})"
+        return f"Github pull request {self.base_repository} #{self.pull_number} ({self.head_changeset[:8]})"
 
     def __repr__(self):
-        return f"GithubRevision base_repo={self.base_repository} head_repo={self.head_repository} pull_number={self.pull_number} sha={self.pull_head_sha}"
+        return f"GithubRevision base_repo={self.base_repository} head_repo={self.head_repository} pull_number={self.pull_number} head={self.head_changeset}"
 
     @property
     def repo_name(self):
@@ -64,9 +72,10 @@ class GithubRevision(Revision):
     def as_dict(self):
         return {
             "base_repository": self.base_repository,
+            "base_changeset": self.base_changeset,
             "head_repository": self.head_repository,
+            "head_changeset": self.head_changeset,
             "pull_number": self.pull_number,
-            "pull_head_sha": self.pull_head_sha,
         }
 
     def serialize(self):
@@ -80,12 +89,14 @@ class GithubRevision(Revision):
             "title": f"Issue {self.pull_number}",
             "bugzilla_id": None,
             "base_repository": self.base_repository,
+            "base_changeset": self.base_changeset,
             "head_repository": self.head_repository,
+            "head_changeset": self.head_changeset,
         }
         diff = {
             "provider": "github",
-            "provider_id": self.pull_head_sha,
-            "mercurial_hash": self.pull_head_sha,
+            "provider_id": self.head_changeset,
+            "mercurial_hash": self.head_changeset,
             "repository": self.base_repository,
         }
         return revision, diff
