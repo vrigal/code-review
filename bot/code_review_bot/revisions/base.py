@@ -275,8 +275,8 @@ class Revision(ABC):
 
         if task_env.get("GECKO_REPOSITORY_TYPE") == "git":
             return GithubRevision(
-                base_repo_url=task_env["GECKO_BASE_REPOSITORY"],
-                head_repo_url=task_env["GECKO_HEAD_REPOSITORY"],
+                base_repository=task_env["GECKO_BASE_REPOSITORY"],
+                head_repository=task_env["GECKO_HEAD_REPOSITORY"],
                 pull_number=int(task_env["GECKO_PULL_REQUEST_NUMBER"]),
                 pull_head_sha=task_env["GECKO_HEAD_REV"],
             )
