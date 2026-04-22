@@ -157,6 +157,9 @@ class Settings:
                 self.github_cache.exists()
             ), f"Github cache does not exist {self.github_cache}"
             logger.info("Using Github cache", path=self.mercurial_cache)
+        else:
+            # Fallback to mercurial cache to ease migration on production systems
+            self.github_cache = self.mercurial_cache
 
     def load_user_blacklist(self, usernames, phabricator_api):
         """
