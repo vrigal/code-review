@@ -89,7 +89,7 @@ class GithubClient:
             attrs["body"] = message
 
         pull_request.create_review(
-            commit=repo.get_commit(revision.pull_head_sha),
+            commit=repo.get_commit(revision.head_changeset),
             comments=[self._build_review_comment(issue) for issue in issues],
             # https://docs.github.com/en/rest/pulls/reviews?apiVersion=2022-11-28#create-a-review-for-a-pull-request
             event=event.value,
