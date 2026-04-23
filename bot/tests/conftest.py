@@ -291,24 +291,6 @@ def mock_try_task():
 
 
 @pytest.fixture
-def mock_github_decision_task():
-    """
-    Mock a decision task definition from a github revision
-    """
-    return {
-        "payload": {
-            "env": {
-                "GECKO_REPOSITORY_TYPE": "git",
-                "GECKO_HEAD_REV": "a" * 40,
-                "GECKO_BASE_REPOSITORY": "https://github.tests.com/owner/repo-name",
-                "GECKO_HEAD_REPOSITORY": "https://github.tests.com/owner/repo-name",
-                "GECKO_PULL_REQUEST_NUMBER": 1,
-            }
-        }
-    }
-
-
-@pytest.fixture
 def mock_decision_task():
     """
     Mock a remote decision task definition
