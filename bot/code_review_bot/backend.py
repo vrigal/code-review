@@ -9,6 +9,7 @@ import structlog
 
 from code_review_bot import taskcluster
 from code_review_bot.config import GetAppUserAgent, settings
+from code_review_bot.revisions import PhabricatorRevision
 from code_review_bot.tasks.lint import MozLintIssue
 
 logger = structlog.get_logger(__name__)
@@ -46,38 +47,31 @@ class BackendAPI:
             logger.warn("Skipping revision publication on backend")
             return
 
-        # Check the repositories are urls
-        for url in (revision.base_repository, revision.head_repository):
-            assert isinstance(url, str), "Repository must be a string"
-            res = urllib.parse.urlparse(url)
-            assert res.scheme and res.netloc, f"Repository {url} is not an url"
+        elif isinstance(revision, PhabricatorRevision):
+            # Check the repositories are urls
+            for url in (revision.base_repository, revision.head_repository):
+                assert isinstance(url, str), "Repository must be a string"
+                res = urllib.parse.urlparse(url)
+                assert res.scheme and res.netloc, f"Repository {url} is not an url"
 
-        # Check the Mercurial changesets are strings
-        for changeset in (
-            revision.base_changeset,
-            revision.head_changeset,
-        ):
-            assert isinstance(changeset, str), "Mercurial changeset must be a string"
+            # Check the Mercurial changesets are strings
+            for changeset in (
+                revision.base_changeset,
+                revision.head_changeset,
+            ):
+                assert isinstance(
+                    changeset, str
+                ), "Mercurial changeset must be a string"
 
-        # Create revision on backend if it does not exists
-        data = {
-            "phabricator_id": revision.phabricator_id,
-            "phabricator_phid": revision.phabricator_phid,
-            "title": revision.title,
-            "bugzilla_id": revision.bugzilla_id,
-            "base_repository": revision.base_repository,
-            "head_repository": revision.head_repository,
-            "base_changeset": revision.base_changeset,
-            "head_changeset": revision.head_changeset,
-        }
+        revision_data, diff_data = revision.serialize()
 
-        # Try to create the revision, or retrieve it in case it exists with that Phabricator ID.
+        # Try to create the revision, or retrieve it in case it exists with that provider and ID.
         # The backend always returns a revisions, either a new one, or a pre-existing one
         revision_url = "/v1/revision/"
         auth = (self.username, self.password)
         url_post = urllib.parse.urljoin(self.url, revision_url)
         response = requests.post(
-            url_post, headers=GetAppUserAgent(), json=data, auth=auth
+            url_post, headers=GetAppUserAgent(), json=revision_data, auth=auth
         )
         if not response.ok:
             logger.warn(f"Backend rejected the payload: {response.content}")
@@ -87,17 +81,14 @@ class BackendAPI:
         revision.issues_url = backend_revision["issues_bulk_url"]
         revision.id = backend_revision["id"]
 
-        # A revision may have no diff (e.g. Mozilla-central group tasks)
-        if not revision.diff_id:
+        # A revision may have no diff (e.g. Phabricator Mozilla-central group tasks)
+        if isinstance(revision, PhabricatorRevision) and not revision.diff_id:
             return backend_revision
 
         # Create diff attached to revision on backend
         data = {
-            "id": revision.diff_id,
-            "phid": revision.diff_phid,
+            **diff_data,
             "review_task_id": settings.taskcluster.task_id,
-            "mercurial_hash": revision.head_changeset,
-            "repository": revision.head_repository,
         }
         backend_diff = self.create(backend_revision["diffs_url"], data)
 

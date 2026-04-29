@@ -18,9 +18,10 @@ from code_review_bot.analysis import (
 )
 from code_review_bot.backend import BackendAPI
 from code_review_bot.config import settings
+from code_review_bot.git import git_clone
 from code_review_bot.mercurial import MercurialWorker, Repository, robust_checkout
 from code_review_bot.report.debug import DebugReporter
-from code_review_bot.revisions import PhabricatorRevision, Revision
+from code_review_bot.revisions import GithubRevision, PhabricatorRevision, Revision
 from code_review_bot.sources.phabricator import (
     PhabricatorActions,
     PhabricatorBuildState,
@@ -133,7 +134,7 @@ class Workflow:
             self.clone_repository(revision)
 
             # Mark know issues to avoid publishing them on this patch
-            self.find_previous_issues(issues, base_rev_changeset)
+            self.find_previous_issues(revision, issues, base_rev_changeset)
             new_issues_count = sum(issue.new_issue for issue in issues)
             logger.info(
                 f"Found {new_issues_count} new issues (over {len(issues)} total detected issues)",
@@ -265,9 +266,11 @@ class Workflow:
             logger.warning("Blacklisted author, stopping there.")
             return
 
-        # Cannot run without mercurial cache configured
-        if not settings.mercurial_cache:
-            raise Exception("Mercurial cache must be configured to start analysis")
+        # Cannot run without either mercurial or github cache configured
+        if not settings.mercurial_cache and not settings.git_cache:
+            raise Exception(
+                "One of Mercurial cache or github cache must be configured to start analysis"
+            )
 
         # Cannot run without ssh key
         if not settings.ssh_key:
@@ -361,26 +364,52 @@ class Workflow:
         Clone the repo locally when configured
         On production this should use a Taskcluster cache
         """
-        if not settings.mercurial_cache:
-            logger.debug("Local clone not required")
-            return
         if self.clone_available:
             logger.debug("Local clone already setup")
             return
 
-        logger.info(
-            "Cloning revision to build issues",
-            repo=revision.base_repository,
-            changeset=revision.head_changeset,
-            dest=settings.mercurial_cache_checkout,
-        )
-        robust_checkout(
-            repo_upstream_url=revision.base_repository,
-            repo_url=revision.head_repository,
-            revision=revision.head_changeset,
-            checkout_dir=settings.mercurial_cache_checkout,
-            sharebase_dir=settings.mercurial_cache_sharebase,
-        )
+        if not settings.mercurial_cache and not settings.git_cache:
+            logger.info("Local clone not required")
+            return
+
+        if isinstance(revision, PhabricatorRevision):
+            # Mercurial clone
+            if not settings.mercurial_cache:
+                raise Exception(
+                    "Mercurial cache directory is not configured, cannot clone"
+                )
+            logger.info(
+                "Cloning mercurial revision to build issues",
+                repo=revision.base_repository,
+                changeset=revision.head_changeset,
+                dest=settings.mercurial_cache_checkout,
+            )
+            robust_checkout(
+                repo_upstream_url=revision.base_repository,
+                repo_url=revision.head_repository,
+                revision=revision.head_changeset,
+                checkout_dir=settings.mercurial_cache_checkout,
+                sharebase_dir=settings.mercurial_cache_sharebase,
+            )
+        elif isinstance(revision, GithubRevision):
+            # Git clone
+            if not settings.git_cache:
+                raise Exception("Git cache directory is not configured, cannot clone")
+            logger.info(
+                "Cloning mercurial revision to build issues",
+                repo=revision.base_repository,
+                changeset=revision.head_changeset,
+                dest=settings.git_cache,
+            )
+            git_clone(
+                base_repository=revision.base_repository,
+                head_repository=revision.head_repository,
+                revision=revision.head_changeset,
+                destination=settings.git_cache,
+            )
+        else:
+            raise NotImplementedError
+
         self.clone_available = True
 
     def publish(self, revision, issues, task_failures, notices, reviewers):
@@ -490,7 +519,7 @@ class Workflow:
                 },
             )
 
-    def find_previous_issues(self, issues, base_rev_changeset=None):
+    def find_previous_issues(self, revision, issues, base_rev_changeset=None):
         """
         Look for known issues in the backend matching the given list of issues
 
@@ -513,9 +542,17 @@ class Workflow:
             base_revision_changeset=base_rev_changeset,
         )
 
+        if isinstance(revision, PhabricatorRevision):
+            repository_slug = "mozilla-central"
+        elif isinstance(revision, GithubRevision):
+            # TODO: Rely on the central repository for known issues
+            repository_slug = revision.repository_slug
+        else:
+            raise NotImplementedError
+
         for path, group_issues in issues_groups:
             known_issues = self.backend_api.list_repo_issues(
-                "mozilla-central",
+                repository_slug,
                 date=current_date,
                 revision_changeset=base_rev_changeset,
                 path=path,
@@ -673,11 +710,16 @@ class Workflow:
         """
         Update build status on HarborMaster
         """
-        if not isinstance(revision, PhabricatorRevision):
-            raise NotImplementedError(
-                "Only Phabricator revisions are supported for now"
-            )
+        if isinstance(revision, GithubRevision):
+            logger.warning("No Lando publication for Github yet")
+            return
+
         assert isinstance(state, BuildState)
+
+        # Skip github status update, as we rely on the github reporter for publication
+        if isinstance(revision, GithubRevision):
+            return
+
         if not revision.build_target_phid:
             logger.info(
                 "No build target found, skipping HarborMaster update", state=state.value
@@ -701,6 +743,7 @@ class Workflow:
             raise NotImplementedError(
                 "Only Phabricator revisions are supported for now"
             )
+
         if not revision.build_target_phid:
             logger.info(
                 "No build target found, skipping HarborMaster link creation",

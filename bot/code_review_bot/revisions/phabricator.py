@@ -85,7 +85,7 @@ class PhabricatorRevision(Revision):
         def repo_slug(url):
             if url.startswith("https://hg.mozilla.org/"):
                 url = url[23:]
-            return url.replace("/", "-")
+            return url.replace("/", "_")
 
         out = []
 
@@ -130,12 +130,13 @@ class PhabricatorRevision(Revision):
         return f"Phabricator #{self.diff_id} - {self.diff_phid}"
 
     @staticmethod
-    def from_try_task(try_task: dict, decision_task: dict, phabricator: PhabricatorAPI):
+    def from_try_task(
+        code_review: dict, decision_task: dict, phabricator: PhabricatorAPI
+    ):
         """
         Load identifiers from Phabricator, using the remote task description
         """
         # Load build target phid from the task env
-        code_review = try_task["extra"]["code-review"]
         build_target_phid = code_review.get("phabricator-diff") or code_review.get(
             "phabricator-build-target"
         )
@@ -361,8 +362,17 @@ class PhabricatorRevision(Revision):
         )
         logger.info("Downloading HGMO file", url=url)
 
-        response = requests.get(url, headers=GetAppUserAgent())
-        response.raise_for_status()
+        try:
+            response = requests.get(url, headers=GetAppUserAgent())
+            response.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            if e.response.status_code == 404:
+                logger.warning("Failed to download file", path=self.path)
+                # Consider as empty content if the file is not found
+                return None
+            else:
+                # When encountering another HTTP error, raise the issue
+                raise e
 
         # Store in cache
         content = response.content.decode("utf-8")
@@ -430,3 +440,26 @@ class PhabricatorRevision(Revision):
             "head_changeset": self.head_changeset,
             "base_changeset": self.base_changeset,
         }
+
+    def serialize(self):
+        """
+        Outputs a tuple of dicts for revision and diff sent to backend
+        """
+        revision = {
+            "provider": "phabricator",
+            "provider_id": self.phabricator_id,
+            "title": self.title,
+            "bugzilla_id": self.bugzilla_id,
+            "base_repository": self.base_repository,
+            "head_repository": self.head_repository,
+            "base_changeset": self.base_changeset,
+            "head_changeset": self.head_changeset,
+        }
+        diff = {
+            "id": self.diff_id,
+            "provider_id": self.diff_phid,
+            "mercurial_hash": self.head_changeset,
+            "repository": self.head_repository,
+        }
+
+        return revision, diff

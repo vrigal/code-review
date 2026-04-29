@@ -5,7 +5,7 @@
 from unittest import mock
 
 from code_review_bot.config import TaskCluster
-from code_review_bot.revisions import PhabricatorRevision
+from code_review_bot.revisions import PhabricatorRevision, Revision
 
 
 class MockPhabricatorRevision(PhabricatorRevision):
@@ -95,8 +95,8 @@ def test_index_autoland(
     calls = mock_workflow.index_service.insertTask.call_args_list
 
     assert [c[0][0] for c in calls] == [
-        "project.relman.test.code-review.head_repo.integration-autoland.deadbeef123",
-        "project.relman.test.code-review.head_repo.integration-autoland.deadbeef123.12345deadbeef",
+        "project.relman.test.code-review.head_repo.integration_autoland.deadbeef123",
+        "project.relman.test.code-review.head_repo.integration_autoland.deadbeef123.12345deadbeef",
     ]
 
     # Check all calls have the same shared payload
@@ -199,9 +199,8 @@ def test_index_from_try(
     """
 
     with mock_phabricator as api:
-        revision = PhabricatorRevision.from_try_task(
-            mock_try_task, mock_decision_task, api
-        )
+        revision = Revision.from_try_task(mock_try_task, mock_decision_task, api)
+        assert isinstance(revision, PhabricatorRevision)
 
     mock_workflow.index_service = mock.Mock()
     mock_config.taskcluster = TaskCluster("/tmp/dummy", "12345deadbeef", 0, False)

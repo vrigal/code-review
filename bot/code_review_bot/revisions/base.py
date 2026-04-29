@@ -6,6 +6,7 @@ import os
 import random
 from abc import ABC
 from datetime import timedelta
+from pathlib import Path
 
 import rs_parsepatch
 import structlog
@@ -165,6 +166,25 @@ class Revision(ABC):
         lines = set(range(issue.line, issue.line + issue.nb_lines))
         return not lines.isdisjoint(modified_lines)
 
+    def get_file_content(
+        self, file_path: str, local_cache_repository: Path | None = None
+    ):
+        if local_cache_repository:
+            logger.debug("Using the local repository to build issue's hash")
+            try:
+                with (local_cache_repository / file_path).open() as f:
+                    file_content = f.read()
+            except (FileNotFoundError, IsADirectoryError):
+                logger.warning("Failed to find issue's related file", path=file_path)
+                file_content = None
+        else:
+            try:
+                file_content = self.load_file(file_path)
+            except ValueError:
+                # The path is erroneous, consider as empty content
+                file_content = None
+        return file_content
+
     @property
     def has_clang_files(self):
         """
@@ -237,17 +257,31 @@ class Revision(ABC):
         """
         raise NotImplementedError
 
+    def serialize(self):
+        """
+        Outputs a tuple of dicts for revision and diff sent to backend
+        """
+        raise NotImplementedError
+
     @staticmethod
     def from_try_task(try_task: dict, decision_task: dict, phabricator: PhabricatorAPI):
         """
-        Load identifiers from Phabricator, using the remote task description
+        Load identifiers from Phabricator or Github, using the remote task description
         """
+        from code_review_bot.revisions.github import GithubRevision
         from code_review_bot.revisions.phabricator import PhabricatorRevision
 
-        # Load build target phid from the task env
-        code_review = try_task["extra"]["code-review"]
+        task_env = decision_task.get("payload", {}).get("env", {})
 
-        # TODO: support github revision here too
-        return PhabricatorRevision.from_try_task(
-            code_review, decision_task, phabricator
-        )
+        if task_env.get("GECKO_REPOSITORY_TYPE") == "git":
+            return GithubRevision(
+                base_repository=task_env["GECKO_BASE_REPOSITORY"],
+                base_changeset=task_env["GECKO_BASE_REV"],
+                head_repository=task_env["GECKO_HEAD_REPOSITORY"],
+                head_changeset=task_env["GECKO_HEAD_REV"],
+                pull_number=int(task_env["GECKO_PULL_REQUEST_NUMBER"]),
+            )
+        else:
+            return PhabricatorRevision.from_try_task(
+                try_task["extra"]["code-review"], decision_task, phabricator
+            )

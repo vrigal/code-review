@@ -54,7 +54,7 @@ class RepositoryGetOrCreateField(serializers.SlugRelatedField):
                 return
         # Github repositories uses a path like <owner>/<slug>, so we need to replace the
         # inner slash to have a slug usable within URLs (e.g. to list issues on a repo).
-        slug = parsed.path.lstrip("/").replace("/", "+")
+        slug = parsed.path.lstrip("/").replace("/", "_")
         try:
             repo, _ = self.get_queryset().get_or_create(
                 url=url, defaults={"slug": slug}

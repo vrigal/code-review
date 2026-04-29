@@ -64,6 +64,13 @@ def parse_cli():
         type=Path,
         default=None,
     )
+    parser.add_argument(
+        "--github-repository",
+        help="Optional path to a up-to-date github repository matching the analyzed revision.\n"
+        "This argument is required for Github reviusions in order to compute issues' hashes based on file content.",
+        type=Path,
+        default=None,
+    )
     parser.add_argument("--taskcluster-client-id", help="Taskcluster Client ID")
     parser.add_argument("--taskcluster-access-token", help="Taskcluster Access token")
     return parser.parse_args()
@@ -116,6 +123,7 @@ def main():
         taskcluster.secrets["repositories"],
         taskcluster.secrets["ssh_key"],
         args.mercurial_repository,
+        args.github_repository,
     )
 
     # Setup statistics

@@ -10,7 +10,7 @@ if [[ ! -f $HGRC ]]; then
 fi
 
 apt-get update
-apt-get install --no-install-recommends -y curl python-dev-is-python3 gcc openssh-client libjemalloc2
+apt-get install --no-install-recommends -y curl python-dev-is-python3 gcc openssh-client libjemalloc2 git
 
 pip install --disable-pip-version-check --quiet --no-cache-dir mercurial==$MERCURIAL_VERSION
 
